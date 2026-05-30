@@ -37,9 +37,16 @@ class Tag(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255), nullable=False)
-    tag_type = db.Column(db.String(50), nullable=False)  # source/metadata/face/user
+    # valid types: source, location, date, people, event, general
+    tag_type = db.Column(db.String(50), nullable=False)
 
-    __table_args__ = (db.UniqueConstraint("name", "tag_type", name="uq_tag_name_type"),)
+    __table_args__ = (
+        db.UniqueConstraint("name", "tag_type", name="uq_tag_name_type"),
+        db.CheckConstraint(
+            "tag_type IN ('source', 'location', 'date', 'people', 'event', 'general')",
+            name="ck_tag_tag_type",
+        ),
+    )
 
     photos = db.relationship("Photo", secondary="photo_tags", back_populates="tags")
 

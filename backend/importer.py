@@ -12,6 +12,7 @@ from datetime import datetime
 from flask import Flask
 
 import config
+import tagger
 from models import db, Photo, Tag
 
 SUPPORTED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".heic"}
@@ -28,15 +29,6 @@ def md5(filepath):
         for chunk in iter(lambda: f.read(65536), b""):
             h.update(chunk)
     return h.hexdigest()
-
-
-def get_or_create_tag(name, tag_type):
-    tag = Tag.query.filter_by(name=name, tag_type=tag_type).first()
-    if not tag:
-        tag = Tag(name=name, tag_type=tag_type)
-        db.session.add(tag)
-        db.session.flush()
-    return tag
 
 
 def extract_exif(filepath):
@@ -223,15 +215,13 @@ def main():
         existing = Photo.query.filter_by(file_hash=file_hash).first()
 
         if existing:
-            parent = os.path.basename(os.path.dirname(filepath))
-            tag = get_or_create_tag(parent, "source")
-            if tag not in existing.tags:
-                existing.tags.append(tag)
+            added = tagger.apply_tags_to_photo(existing, [tagger.generate_source_tag(filepath)], db.session)
+            if added:
                 db.session.commit()
-                tag_updates += 1
+                tag_updates += added
             os.remove(filepath)
             duplicates += 1
-            print(f"{prefix} — duplicate of '{existing.filename}', tag '{parent}' ensured")
+            print(f"{prefix} — duplicate of '{existing.filename}'")
             continue
 
         # New photo
@@ -241,7 +231,6 @@ def main():
         shutil.copy2(filepath, dest)
 
         date_taken, latitude, longitude = extract_exif(filepath)
-        parent = os.path.basename(os.path.dirname(filepath))
 
         photo = Photo(
             filename=dest_filename,
@@ -254,8 +243,10 @@ def main():
         db.session.add(photo)
         db.session.flush()
 
-        tag = get_or_create_tag(parent, "source")
-        photo.tags.append(tag)
+        tags = [tagger.generate_source_tag(filepath)]
+        tags += tagger.generate_date_tags(date_taken)
+        tags += tagger.generate_location_tags(latitude, longitude)
+        tagger.apply_tags_to_photo(photo, tags, db.session)
         db.session.commit()
 
         os.remove(filepath)
