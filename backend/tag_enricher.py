@@ -1,5 +1,6 @@
 """
 Applies location and date tags to all existing photos in the database.
+Generates granular types: location, region, country, year, month, season.
 Safe to run repeatedly — skips tags already present.
 """
 
@@ -21,7 +22,7 @@ def main():
     start = time.monotonic()
     photos = Photo.query.all()
     total = len(photos)
-    print(f"Enriching {total} photo(s) with location and date tags.\n")
+    print(f"Enriching {total} photo(s) with location/region/country and year/month/season tags.\n")
 
     updated = skipped = total_added = 0
 

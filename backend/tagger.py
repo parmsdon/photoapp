@@ -13,7 +13,12 @@ SEASONS = {
 
 
 def generate_location_tags(lat, lon):
-    """Reverse geocode (lat, lon) and return (name, 'location') tuples for town, region, country."""
+    """
+    Reverse geocode (lat, lon) and return typed (name, tag_type) tuples:
+      town/city  → tag_type='location'
+      region     → tag_type='region'
+      country    → tag_type='country'
+    """
     if lat is None or lon is None:
         return []
     try:
@@ -26,22 +31,27 @@ def generate_location_tags(lat, lon):
         if r.get("name"):
             tags.append((r["name"], "location"))
         if r.get("admin1"):
-            tags.append((r["admin1"], "location"))
+            tags.append((r["admin1"], "region"))
         if r.get("cc"):
-            tags.append((r["cc"], "location"))
+            tags.append((r["cc"], "country"))
         return tags
     except Exception:
         return []
 
 
 def generate_date_tags(date_taken):
-    """Return (name, 'date') tuples for year, month name, and season."""
+    """
+    Return typed (name, tag_type) tuples:
+      year   → tag_type='year'
+      month  → tag_type='month'
+      season → tag_type='season'
+    """
     if date_taken is None:
         return []
     return [
-        (str(date_taken.year), "date"),
-        (date_taken.strftime("%B"), "date"),
-        (SEASONS[date_taken.month], "date"),
+        (str(date_taken.year), "year"),
+        (date_taken.strftime("%B"), "month"),
+        (SEASONS[date_taken.month], "season"),
     ]
 
 

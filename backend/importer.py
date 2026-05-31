@@ -1,6 +1,8 @@
 """
 Photo import script. Run repeatedly as an inbox processor — each run ingests
 whatever is in SOURCE_FOLDERS and leaves them empty.
+
+Tags applied per photo: source, location, region, country, year, month, season.
 """
 
 import hashlib
