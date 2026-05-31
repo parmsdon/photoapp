@@ -2,7 +2,7 @@ import './PhotoViewer.css';
 import PhotoGrid from './PhotoGrid';
 import PhotoNavigator from './PhotoNavigator';
 
-export default function PhotoViewer({ photos, viewMode, onToggleView, onSelectPhoto, pagination, onPageChange }) {
+export default function PhotoViewer({ photos, viewMode, onToggleView, onSelectPhoto, pagination, onPageChange, onPageSizeChange }) {
   const { total, page, pages } = pagination;
 
   return (
@@ -31,7 +31,7 @@ export default function PhotoViewer({ photos, viewMode, onToggleView, onSelectPh
 
       <div className="viewer-content">
         {viewMode === 'grid'
-          ? <PhotoGrid photos={photos} onSelectPhoto={onSelectPhoto} />
+          ? <PhotoGrid photos={photos} onSelectPhoto={onSelectPhoto} onPageSizeChange={onPageSizeChange} />
           : <PhotoNavigator
               photos={photos}
               pagination={pagination}

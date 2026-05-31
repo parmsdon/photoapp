@@ -2,14 +2,15 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: #1a1a1a;
+  background: var(--bg-panel);
   overflow: hidden;
 }
 
-/* Active filters */
+/* ─── Active filters ─────────────────────────────────────────────────────── */
+
 .active-filters {
   padding: 12px;
-  border-bottom: 1px solid #2a2a2a;
+  border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
 
@@ -24,17 +25,17 @@
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #666;
+  color: var(--text-faint);
   font-weight: 600;
 }
 
 .photo-count {
   font-size: 12px;
-  color: #888;
+  color: var(--text-muted);
 }
 
 .photo-count strong {
-  color: #c0c0c0;
+  color: var(--text-secondary);
 }
 
 .filter-chips {
@@ -77,18 +78,19 @@
 
 .no-filters {
   font-size: 12px;
-  color: #555;
+  color: var(--text-faint);
   font-style: italic;
 }
 
-/* Categories */
+/* ─── Categories ─────────────────────────────────────────────────────────── */
+
 .categories {
   overflow-y: auto;
   flex: 1;
 }
 
 .category {
-  border-bottom: 1px solid #242424;
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .category-header {
@@ -100,7 +102,7 @@
   border: none;
   width: 100%;
   text-align: left;
-  color: #c0c0c0;
+  color: var(--text-secondary);
   font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
@@ -109,7 +111,7 @@
 }
 
 .category-header:hover {
-  background: #222;
+  background: var(--bg-item-hover);
 }
 
 .category-dot {
@@ -122,7 +124,7 @@
 .category-chevron {
   margin-left: auto;
   font-size: 10px;
-  color: #555;
+  color: var(--text-faint);
   transition: transform 0.2s;
 }
 
@@ -132,7 +134,7 @@
 
 .category-count {
   font-size: 11px;
-  color: #555;
+  color: var(--text-faint);
   font-weight: 400;
   text-transform: none;
   letter-spacing: 0;
@@ -151,48 +153,39 @@
   justify-content: space-between;
   padding: 5px 12px 5px 28px;
   cursor: pointer;
-  border-radius: 0;
   transition: background 0.1s;
   gap: 6px;
 }
 
-.tag-item:hover {
-  background: #252525;
-}
-
-.tag-item.active {
-  background: #1e2a3a;
-}
+.tag-item:hover  { background: var(--bg-item-hover); }
+.tag-item.active { background: var(--bg-tag-active); }
 
 .tag-name {
   flex: 1;
   font-size: 13px;
-  color: #ccc;
+  color: var(--text-btn);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.tag-item.active .tag-name {
-  color: #7ab8ff;
-}
+.tag-item.active .tag-name { color: var(--text-accent); }
 
 .tag-count {
   font-size: 11px;
-  color: #555;
+  color: var(--text-faint);
   flex-shrink: 0;
 }
 
 .tag-count.contextual {
-  color: #4a7a9b;
+  color: var(--text-accent-dim);
   font-style: italic;
 }
 
-.tag-item.active .tag-count {
-  color: #4a80b8;
-}
+.tag-item.active .tag-count { color: var(--accent-blue); }
 
-/* Type colours (dot + chip background) */
+/* ─── Tag type colours (dot + chip background) ──────────────────────────── */
+
 .type-source   { background-color: #4a90d9; }
 .type-location { background-color: #27ae60; }
 .type-region   { background-color: #229954; }
@@ -203,3 +196,15 @@
 .type-people   { background-color: #e67e22; }
 .type-event    { background-color: #e74c3c; }
 .type-general  { background-color: #7f8c8d; }
+
+/* ─── Large font variant (applied to .tag-panel-wrapper.large-font) ─────── */
+
+.large-font .active-filters-label { font-size: 13px; }
+.large-font .photo-count          { font-size: 14px; }
+.large-font .filter-chip          { font-size: 14px; }
+.large-font .no-filters           { font-size: 14px; }
+.large-font .category-header      { font-size: 14px; }
+.large-font .category-count       { font-size: 13px; }
+.large-font .tag-name             { font-size: 15px; }
+.large-font .tag-count            { font-size: 13px; }
+.large-font .tag-item             { padding-top: 7px; padding-bottom: 7px; }

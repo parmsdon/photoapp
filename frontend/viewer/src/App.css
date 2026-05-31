@@ -1,6 +1,59 @@
 .app {
   display: flex;
+  flex-direction: column;
   height: 100vh;
+  overflow: hidden;
+  background: var(--bg-app);
+  color: var(--text-primary);
+}
+
+/* ─── Settings bar ──────────────────────────────────────────────────────── */
+
+.settings-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 14px;
+  background: var(--bg-bar);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.settings-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.settings-controls {
+  display: flex;
+  gap: 4px;
+}
+
+.settings-btn {
+  background: var(--bg-btn);
+  border: none;
+  color: var(--text-btn);
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.settings-btn:hover {
+  background: var(--bg-btn-hover);
+  color: var(--text-btn-hover);
+}
+
+/* ─── Main layout ───────────────────────────────────────────────────────── */
+
+.main-content {
+  display: flex;
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -9,7 +62,7 @@
   min-width: 220px;
   max-width: 380px;
   flex-shrink: 0;
-  border-right: 1px solid #2a2a2a;
+  border-right: 1px solid var(--border);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -18,12 +71,15 @@
 .photo-area {
   flex: 1;
   min-width: 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 
-/* Lightbox */
+/* ─── Lightbox ──────────────────────────────────────────────────────────── */
+
+/* Lightbox is always dark regardless of theme — better for photo viewing */
 .lightbox {
   position: fixed;
   inset: 0;
@@ -57,9 +113,7 @@
   z-index: 1001;
 }
 
-.lightbox-close:hover {
-  color: #fff;
-}
+.lightbox-close:hover { color: #fff; }
 
 .lightbox-nav {
   position: fixed;
@@ -75,14 +129,10 @@
   z-index: 1001;
 }
 
-.lightbox-nav:hover {
-  background: rgba(255, 255, 255, 0.16);
-  color: #fff;
-}
-
-.lightbox-nav.prev { left: 16px; }
-.lightbox-nav.next { right: 16px; }
-.lightbox-nav:disabled { opacity: 0.2; pointer-events: none; }
+.lightbox-nav:hover        { background: rgba(255,255,255,0.16); color: #fff; }
+.lightbox-nav.prev         { left: 16px; }
+.lightbox-nav.next         { right: 16px; }
+.lightbox-nav:disabled     { opacity: 0.2; pointer-events: none; }
 
 .lightbox-info {
   position: fixed;
@@ -95,7 +145,4 @@
   pointer-events: none;
 }
 
-.lightbox-info p + p {
-  margin-top: 2px;
-  color: #666;
-}
+.lightbox-info p + p { margin-top: 2px; color: #666; }

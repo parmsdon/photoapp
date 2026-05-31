@@ -3,7 +3,7 @@
   flex-direction: column;
   height: 100%;
   overflow: hidden;
-  background: #0e0e0e;
+  background: var(--bg-photo);
 }
 
 .navigator-photo-wrap {
@@ -30,15 +30,15 @@
   align-items: center;
   justify-content: space-between;
   padding: 8px 16px;
-  border-top: 1px solid #2a2a2a;
-  background: #181818;
+  border-top: 1px solid var(--border);
+  background: var(--bg-bar);
   flex-shrink: 0;
   gap: 12px;
 }
 
 .navigator-filename {
   font-size: 12px;
-  color: #aaa;
+  color: var(--text-filename);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -46,7 +46,7 @@
 
 .navigator-date {
   font-size: 12px;
-  color: #666;
+  color: var(--text-dim);
   white-space: nowrap;
   flex-shrink: 0;
 }
@@ -57,16 +57,16 @@
   justify-content: center;
   gap: 5px;
   padding: 10px 16px;
-  background: #181818;
-  border-top: 1px solid #2a2a2a;
+  background: var(--bg-bar);
+  border-top: 1px solid var(--border);
   flex-shrink: 0;
   flex-wrap: wrap;
 }
 
 .nav-btn {
-  background: #2a2a2a;
+  background: var(--bg-btn);
   border: none;
-  color: #ccc;
+  color: var(--text-btn);
   padding: 5px 11px;
   border-radius: 4px;
   font-size: 12px;
@@ -76,8 +76,8 @@
 }
 
 .nav-btn:hover:not(:disabled) {
-  background: #383838;
-  color: #fff;
+  background: var(--bg-btn-hover);
+  color: var(--text-btn-hover);
 }
 
 .nav-btn:disabled {
@@ -87,12 +87,12 @@
 
 .nav-counter {
   font-size: 13px;
-  color: #999;
+  color: var(--text-nav);
   font-variant-numeric: tabular-nums;
   min-width: 90px;
   text-align: center;
   padding: 5px 8px;
-  background: #222;
+  background: var(--bg-surface);
   border-radius: 4px;
 }
 
@@ -101,7 +101,7 @@
   align-items: center;
   justify-content: center;
   height: 100%;
-  color: #444;
+  color: var(--text-empty);
   font-size: 15px;
   font-style: italic;
 }
