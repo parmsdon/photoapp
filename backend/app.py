@@ -114,24 +114,21 @@ def list_tags():
 def tag_categories():
     from sqlalchemy import func
 
-    TAG_TYPES = ["source", "location", "date", "people", "event", "general"]
-
     rows = (
         db.session.query(Tag, func.count(PhotoTag.photo_id).label("count"))
         .outerjoin(PhotoTag, PhotoTag.tag_id == Tag.id)
         .group_by(Tag.id)
-        .order_by(Tag.name)
+        .order_by(Tag.tag_type, Tag.name)
         .all()
     )
 
-    result = {t: [] for t in TAG_TYPES}
+    result = {}
     for tag, count in rows:
-        if tag.tag_type in result:
-            result[tag.tag_type].append({
-                "id": tag.id,
-                "name": tag.name,
-                "count": count,
-            })
+        result.setdefault(tag.tag_type, []).append({
+            "id": tag.id,
+            "name": tag.name,
+            "count": count,
+        })
 
     return jsonify(result)
 
