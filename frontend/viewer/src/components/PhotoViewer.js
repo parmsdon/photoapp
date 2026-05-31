@@ -2,7 +2,11 @@ import './PhotoViewer.css';
 import PhotoGrid from './PhotoGrid';
 import PhotoNavigator from './PhotoNavigator';
 
-export default function PhotoViewer({ photos, viewMode, onToggleView, onSelectPhoto, pagination, onPageChange, onPageSizeChange }) {
+export default function PhotoViewer({
+  photos, viewMode, onToggleView, onSelectPhoto,
+  pagination, onPageChange, onPageSizeChange,
+  showFaces, onToggleShowFaces,
+}) {
   const { total, page, pages } = pagination;
 
   return (
@@ -13,30 +17,46 @@ export default function PhotoViewer({ photos, viewMode, onToggleView, onSelectPh
           {viewMode === 'grid' && pages > 1 && ` · page ${page} of ${pages}`}
         </span>
 
-        <div className="view-toggle">
+        <div className="viewer-toolbar-controls">
+          <div className="view-toggle">
+            <button
+              className={`view-toggle-btn ${viewMode === 'grid' ? 'active' : ''}`}
+              onClick={() => viewMode !== 'grid' && onToggleView()}
+            >
+              Grid
+            </button>
+            <button
+              className={`view-toggle-btn ${viewMode === 'navigator' ? 'active' : ''}`}
+              onClick={() => viewMode !== 'navigator' && onToggleView()}
+            >
+              Navigator
+            </button>
+          </div>
+
           <button
-            className={`view-toggle-btn ${viewMode === 'grid' ? 'active' : ''}`}
-            onClick={() => viewMode !== 'grid' && onToggleView()}
+            className={`view-toggle-btn${showFaces ? ' active' : ''}`}
+            onClick={onToggleShowFaces}
+            title={showFaces ? 'Hide face boxes' : 'Show face boxes'}
           >
-            Grid
-          </button>
-          <button
-            className={`view-toggle-btn ${viewMode === 'navigator' ? 'active' : ''}`}
-            onClick={() => viewMode !== 'navigator' && onToggleView()}
-          >
-            Navigator
+            Faces
           </button>
         </div>
       </div>
 
       <div className="viewer-content">
         {viewMode === 'grid'
-          ? <PhotoGrid photos={photos} onSelectPhoto={onSelectPhoto} onPageSizeChange={onPageSizeChange} />
+          ? <PhotoGrid
+              photos={photos}
+              onSelectPhoto={onSelectPhoto}
+              onPageSizeChange={onPageSizeChange}
+              showFaces={showFaces}
+            />
           : <PhotoNavigator
               photos={photos}
               pagination={pagination}
               onPageChange={onPageChange}
               onSelectPhoto={onSelectPhoto}
+              showFaces={showFaces}
             />
         }
       </div>

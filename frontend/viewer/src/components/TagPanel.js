@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import './TagPanel.css';
 import { API_BASE } from '../config';
+import { faceColor, personRankFromName } from '../utils/faceColours';
 
 const API = `${API_BASE}/api`;
 
@@ -17,12 +18,27 @@ const CATEGORY_LABELS = {
   source:   'Source',
 };
 
+const EXPANDED_STORAGE_KEY = 'photoapp-tag-expanded';
+
 export default function TagPanel({ activeFilters, photoCount, onAddFilter, onRemoveFilter }) {
   const [categories, setCategories] = useState({});
-  const [expanded, setExpanded] = useState({ source: false, year: true, location: true });
+  const [expanded, setExpanded] = useState(() => {
+    try {
+      const stored = localStorage.getItem(EXPANDED_STORAGE_KEY);
+      return stored ? JSON.parse(stored) : {};  // default: all collapsed
+    } catch {
+      return {};
+    }
+  });
 
   const isContextual = activeFilters.length > 0;
 
+  // Persist expanded state
+  useEffect(() => {
+    localStorage.setItem(EXPANDED_STORAGE_KEY, JSON.stringify(expanded));
+  }, [expanded]);
+
+  // Fetch available tags whenever filters change
   useEffect(() => {
     const tagIds = activeFilters.map(f => f.id).join(',');
     const url = tagIds
@@ -34,8 +50,8 @@ export default function TagPanel({ activeFilters, photoCount, onAddFilter, onRem
       .catch(console.error);
   }, [activeFilters]);
 
-  const toggle = (type) => setExpanded(prev => ({ ...prev, [type]: !prev[type] }));
-  const isActive = (tag) => activeFilters.some(f => f.id === tag.id);
+  const toggle  = (type) => setExpanded(prev => ({ ...prev, [type]: !prev[type] }));
+  const isActive = (tag)  => activeFilters.some(f => f.id === tag.id);
 
   return (
     <div className="tag-panel">
@@ -51,16 +67,20 @@ export default function TagPanel({ activeFilters, photoCount, onAddFilter, onRem
           <p className="no-filters">No filters — showing all photos</p>
         ) : (
           <div className="filter-chips">
-            {activeFilters.map(tag => (
-              <span key={tag.id} className={`filter-chip type-${tag.tag_type}`}>
-                {tag.name}
-                <button
-                  className="filter-chip-remove"
-                  onClick={() => onRemoveFilter(tag.id)}
-                  title="Remove filter"
-                >×</button>
-              </span>
-            ))}
+            {activeFilters.map(tag => {
+              const personRank = tag.tag_type === 'people' ? personRankFromName(tag.name) : null;
+              const chipStyle  = personRank != null ? { backgroundColor: faceColor(personRank) } : {};
+              return (
+                <span key={tag.id} className={`filter-chip type-${tag.tag_type}`} style={chipStyle}>
+                  {tag.name}
+                  <button
+                    className="filter-chip-remove"
+                    onClick={() => onRemoveFilter(tag.id)}
+                    title="Remove filter"
+                  >×</button>
+                </span>
+              );
+            })}
           </div>
         )}
       </div>

@@ -98,6 +98,33 @@
   box-shadow: 0 8px 40px rgba(0, 0, 0, 0.6);
 }
 
+/* Wraps the img so face boxes can be absolutely positioned over it */
+.lightbox-img-container {
+  position: relative;
+  /* width/height set inline to match the rendered image dimensions */
+}
+
+.lightbox-face-toggle {
+  position: fixed;
+  top: 20px;
+  left: 24px;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: #ccc;
+  font-size: 12px;
+  padding: 5px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  z-index: 1001;
+}
+
+.lightbox-face-toggle:hover,
+.lightbox-face-toggle.active {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
 .lightbox-close {
   position: fixed;
   top: 20px;

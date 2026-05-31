@@ -58,6 +58,22 @@
   width: 100%;
 }
 
+/* ─── Face bounding boxes ────────────────────────────────────────────────── */
+
+.thumb-face-box {
+  position: absolute;
+  border: 1.5px solid;
+  background: rgba(0, 0, 0, 0.06);
+  box-sizing: border-box;
+  pointer-events: none;
+  transition: opacity 0.18s ease;
+}
+
+/* Hide face boxes on hover so the photo is visible clearly */
+.grid-thumb:hover .thumb-face-box {
+  opacity: 0;
+}
+
 .photo-grid-empty {
   grid-column: 1 / -1;
   padding: 40px;

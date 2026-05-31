@@ -5,7 +5,7 @@ from flask_cors import CORS
 from PIL import Image
 
 import config
-from models import db, Photo, Tag, PhotoTag
+from models import db, Face, Photo, Tag, PhotoTag
 
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = config.SQLALCHEMY_DATABASE_URI
@@ -47,8 +47,17 @@ def filter_photos():
     total = query.count()
     photos = query.offset((page - 1) * per_page).limit(per_page).all()
 
+    # Batch check which photos have face records (avoids N+1 queries)
+    photo_ids = [p.id for p in photos]
+    face_photo_ids = set()
+    if photo_ids:
+        rows = db.session.query(Face.photo_id).filter(
+            Face.photo_id.in_(photo_ids)
+        ).distinct().all()
+        face_photo_ids = {r[0] for r in rows}
+
     return jsonify({
-        "photos": [p.to_dict() for p in photos],
+        "photos": [{**p.to_dict(), "has_faces": p.id in face_photo_ids} for p in photos],
         "total": total,
         "page": page,
         "per_page": per_page,
@@ -94,6 +103,23 @@ def delete_photo(photo_id):
     db.session.delete(photo)
     db.session.commit()
     return jsonify({"deleted": photo_id})
+
+
+@app.route("/api/photos/<int:photo_id>/faces")
+def get_photo_faces(photo_id):
+    photo = Photo.query.get_or_404(photo_id)
+    faces = Face.query.filter_by(photo_id=photo_id).all()
+    if not faces:
+        return jsonify([])
+    # Include original image dimensions so the frontend can scale bboxes correctly
+    try:
+        with Image.open(photo.filepath) as img:
+            image_width, image_height = img.size
+    except Exception:
+        image_width = image_height = None
+    result = [{**f.to_dict(), "image_width": image_width, "image_height": image_height}
+              for f in faces]
+    return jsonify(result)
 
 
 @app.route("/api/photos/<int:photo_id>/file")

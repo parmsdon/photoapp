@@ -15,6 +15,7 @@
   cursor: zoom-in;
   padding: 12px;
   min-height: 0;
+  position: relative;
 }
 
 .navigator-photo {
@@ -94,6 +95,53 @@
   padding: 5px 8px;
   background: var(--bg-surface);
   border-radius: 4px;
+}
+
+/* ─── Show Faces toggle ─────────────────────────────────────────────────── */
+
+.face-toggle-btn {
+  background: var(--bg-btn);
+  border: none;
+  color: var(--text-btn);
+  padding: 3px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+}
+
+.face-toggle-btn:hover {
+  background: var(--bg-btn-hover);
+  color: var(--text-btn-hover);
+}
+
+.face-toggle-btn.active {
+  background: var(--bg-tag-active);
+  color: var(--text-accent);
+}
+
+/* ─── Face bounding boxes ────────────────────────────────────────────────── */
+
+/* 10-colour palette cycling by cluster_id — colours set inline via JS */
+.face-box {
+  position: absolute;
+  border: 2px solid;
+  background: rgba(0, 0, 0, 0.08);
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.face-label {
+  position: absolute;
+  top: -20px;
+  left: -2px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #fff;
+  padding: 1px 6px;
+  border-radius: 3px 3px 0 0;
+  white-space: nowrap;
+  line-height: 18px;
 }
 
 .navigator-empty {

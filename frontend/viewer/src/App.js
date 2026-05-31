@@ -1,18 +1,19 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import './App.css';
 import TagPanel from './components/TagPanel';
 import PhotoViewer from './components/PhotoViewer';
 import { API_BASE } from './config';
+import { faceColor } from './utils/faceColours';
 
 const API = `${API_BASE}/api`;
 
 export default function App() {
   // ── Settings (persisted) ───────────────────────────────────────────────
   const [darkMode, setDarkMode] = useState(
-    () => localStorage.getItem('photoapp-dark') !== 'false'  // default: dark
+    () => localStorage.getItem('photoapp-dark') !== 'false'
   );
   const [largeFont, setLargeFont] = useState(
-    () => localStorage.getItem('photoapp-large-font') === 'true' // default: small
+    () => localStorage.getItem('photoapp-large-font') === 'true'
   );
 
   useEffect(() => {
@@ -47,8 +48,8 @@ export default function App() {
 
   useEffect(() => { fetchPhotos(activeFilters, 1, pageSize); }, [activeFilters, fetchPhotos, pageSize]);
 
-  const addFilter    = useCallback((tag) => setActiveFilters(prev => prev.find(f => f.id === tag.id) ? prev : [...prev, tag]), []);
-  const removeFilter = useCallback((id)  => setActiveFilters(prev => prev.filter(f => f.id !== id)), []);
+  const addFilter            = useCallback((tag)     => setActiveFilters(prev => prev.find(f => f.id === tag.id) ? prev : [...prev, tag]), []);
+  const removeFilter         = useCallback((id)      => setActiveFilters(prev => prev.filter(f => f.id !== id)), []);
   const handlePageChange     = useCallback((page)    => fetchPhotos(activeFilters, page, pageSize), [activeFilters, fetchPhotos, pageSize]);
   const handlePageSizeChange = useCallback((newSize) => setPageSize(newSize), []);
 
@@ -59,17 +60,94 @@ export default function App() {
     if (!selectedPhoto) return;
     const handler = (e) => {
       if (e.key === 'Escape')      setSelectedPhoto(null);
-      if (e.key === 'ArrowLeft'  && currentIndex > 0)                  setSelectedPhoto(photos[currentIndex - 1]);
-      if (e.key === 'ArrowRight' && currentIndex < photos.length - 1)  setSelectedPhoto(photos[currentIndex + 1]);
+      if (e.key === 'ArrowLeft'  && currentIndex > 0)                 setSelectedPhoto(photos[currentIndex - 1]);
+      if (e.key === 'ArrowRight' && currentIndex < photos.length - 1) setSelectedPhoto(photos[currentIndex + 1]);
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [selectedPhoto, currentIndex, photos]);
 
+  // ── Lightbox face overlay ──────────────────────────────────────────────
+  // showFaces is the canonical "show face boxes" preference shared across
+  // the grid and the lightbox. The lightbox inherits this value on open.
+  const [showFaces, setShowFaces] = useState(false);
+  const showFacesRef = useRef(showFaces);
+  showFacesRef.current = showFaces;
+
+  const [showLightboxFaces, setShowLightboxFaces] = useState(false);
+  const [lightboxFaces, setLightboxFaces] = useState([]);
+  const [lightboxImgSize, setLightboxImgSize] = useState({ w: 0, h: 0 });
+  const lightboxImgRef    = useRef(null);
+  const lightboxFaceCache = useRef({});
+
+  // When the lightbox opens with a new photo, inherit the current showFaces
+  // preference so grid and lightbox start in the same state.
+  useEffect(() => {
+    setLightboxImgSize({ w: 0, h: 0 });
+    setLightboxFaces([]);
+    if (selectedPhoto) setShowLightboxFaces(showFacesRef.current);
+  }, [selectedPhoto?.id]);
+
+  // Fetch faces when photo changes or toggle turns on
+  useEffect(() => {
+    if (!selectedPhoto || !showLightboxFaces) { setLightboxFaces([]); return; }
+    if (lightboxFaceCache.current[selectedPhoto.id] !== undefined) {
+      setLightboxFaces(lightboxFaceCache.current[selectedPhoto.id]);
+      return;
+    }
+    fetch(`${API}/photos/${selectedPhoto.id}/faces`)
+      .then(r => r.json())
+      .then(data => {
+        lightboxFaceCache.current[selectedPhoto.id] = data;
+        setLightboxFaces(data);
+      })
+      .catch(() => { lightboxFaceCache.current[selectedPhoto.id] = []; });
+  }, [selectedPhoto?.id, showLightboxFaces]);
+
+  const updateLightboxImgSize = useCallback(() => {
+    const img = lightboxImgRef.current;
+    if (img) setLightboxImgSize({ w: img.clientWidth, h: img.clientHeight });
+  }, []);
+
+  function renderLightboxFaces() {
+    if (!showLightboxFaces || !lightboxImgSize.w || !lightboxFaces.length) return null;
+    return lightboxFaces.map(face => {
+      if (!face.image_width) return null;
+      const sx = lightboxImgSize.w / face.image_width;
+      const sy = lightboxImgSize.h / face.image_height;
+      const color = faceColor(face.cluster_id);
+      return (
+        <div
+          key={face.id}
+          style={{
+            position: 'absolute',
+            left:   face.bbox.left   * sx,
+            top:    face.bbox.top    * sy,
+            width:  (face.bbox.right  - face.bbox.left)  * sx,
+            height: (face.bbox.bottom - face.bbox.top) * sy,
+            border: `2px solid ${color}`,
+            boxSizing: 'border-box',
+            pointerEvents: 'none',
+          }}
+        >
+          <span style={{
+            position: 'absolute', top: -22, left: -2,
+            background: color, color: '#fff',
+            fontSize: 11, fontWeight: 600,
+            padding: '1px 6px', borderRadius: '3px 3px 0 0',
+            whiteSpace: 'nowrap', lineHeight: '20px',
+          }}>
+            {face.person_name || '?'}
+          </span>
+        </div>
+      );
+    });
+  }
+
+  // ── Render ─────────────────────────────────────────────────────────────
   return (
     <div className="app">
 
-      {/* ── Settings bar ──────────────────────────────────────────────── */}
       <header className="settings-bar">
         <span className="settings-title">PhotoApp</span>
         <div className="settings-controls">
@@ -90,7 +168,6 @@ export default function App() {
         </div>
       </header>
 
-      {/* ── Main content ──────────────────────────────────────────────── */}
       <div className="main-content">
         <div className={`tag-panel-wrapper${largeFont ? ' large-font' : ''}`}>
           <TagPanel
@@ -110,6 +187,8 @@ export default function App() {
             pagination={pagination}
             onPageChange={handlePageChange}
             onPageSizeChange={handlePageSizeChange}
+            showFaces={showFaces}
+            onToggleShowFaces={() => setShowFaces(f => !f)}
           />
         </div>
       </div>
@@ -119,21 +198,40 @@ export default function App() {
         <div className="lightbox" onClick={() => setSelectedPhoto(null)}>
           <button className="lightbox-close" onClick={() => setSelectedPhoto(null)}>✕</button>
           <button
+            className={`lightbox-face-toggle${showLightboxFaces ? ' active' : ''}`}
+            onClick={e => { e.stopPropagation(); setShowLightboxFaces(f => !f); }}
+          >
+            {showLightboxFaces ? 'Hide Faces' : 'Show Faces'}
+          </button>
+
+          <button
             className="lightbox-nav prev"
             disabled={currentIndex <= 0}
             onClick={e => { e.stopPropagation(); setSelectedPhoto(photos[currentIndex - 1]); }}
           >‹</button>
-          <img
-            className="lightbox-img"
-            src={`${API}/photos/full/${selectedPhoto.id}`}
-            alt={selectedPhoto.filename}
+
+          {/* Image + face overlay wrapper — sized to the rendered image */}
+          <div
+            className="lightbox-img-container"
+            style={lightboxImgSize.w ? { width: lightboxImgSize.w, height: lightboxImgSize.h } : undefined}
             onClick={e => e.stopPropagation()}
-          />
+          >
+            <img
+              ref={lightboxImgRef}
+              className="lightbox-img"
+              src={`${API}/photos/full/${selectedPhoto.id}`}
+              alt={selectedPhoto.filename}
+              onLoad={updateLightboxImgSize}
+            />
+            {renderLightboxFaces()}
+          </div>
+
           <button
             className="lightbox-nav next"
             disabled={currentIndex >= photos.length - 1}
             onClick={e => { e.stopPropagation(); setSelectedPhoto(photos[currentIndex + 1]); }}
           >›</button>
+
           <div className="lightbox-info" onClick={e => e.stopPropagation()}>
             <p>{selectedPhoto.filename}</p>
             {selectedPhoto.date_taken && (

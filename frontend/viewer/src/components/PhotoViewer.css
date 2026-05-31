@@ -21,6 +21,12 @@
   color: var(--text-dim);
 }
 
+.viewer-toolbar-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .view-toggle {
   display: flex;
   gap: 2px;
