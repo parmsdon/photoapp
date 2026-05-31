@@ -2,8 +2,7 @@ import { useState } from 'react';
 import './TagPanel.css';
 
 const CATEGORY_LABELS = {
-  source:   'Source',
-  location: 'Location',
+  location: 'Town/City',
   region:   'Region',
   country:  'Country',
   year:     'Year',
@@ -12,6 +11,7 @@ const CATEGORY_LABELS = {
   people:   'People',
   event:    'Event',
   general:  'General',
+  source:   'Source',
 };
 
 export default function TagPanel({ categories, activeFilters, photoCount, onAddFilter, onRemoveFilter }) {
