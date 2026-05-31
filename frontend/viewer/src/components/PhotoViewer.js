@@ -1,6 +1,6 @@
 import './PhotoViewer.css';
 import PhotoGrid from './PhotoGrid';
-import PhotoStrip from './PhotoStrip';
+import PhotoNavigator from './PhotoNavigator';
 
 export default function PhotoViewer({ photos, viewMode, onToggleView, onSelectPhoto, pagination, onPageChange }) {
   const { total, page, pages } = pagination;
@@ -10,7 +10,7 @@ export default function PhotoViewer({ photos, viewMode, onToggleView, onSelectPh
       <div className="viewer-toolbar">
         <span className="viewer-count">
           {total.toLocaleString()} photo{total !== 1 ? 's' : ''}
-          {pages > 1 && ` · page ${page} of ${pages}`}
+          {viewMode === 'grid' && pages > 1 && ` · page ${page} of ${pages}`}
         </span>
 
         <div className="view-toggle">
@@ -21,10 +21,10 @@ export default function PhotoViewer({ photos, viewMode, onToggleView, onSelectPh
             Grid
           </button>
           <button
-            className={`view-toggle-btn ${viewMode === 'strip' ? 'active' : ''}`}
-            onClick={() => viewMode !== 'strip' && onToggleView()}
+            className={`view-toggle-btn ${viewMode === 'navigator' ? 'active' : ''}`}
+            onClick={() => viewMode !== 'navigator' && onToggleView()}
           >
-            Strip
+            Navigator
           </button>
         </div>
       </div>
@@ -32,11 +32,16 @@ export default function PhotoViewer({ photos, viewMode, onToggleView, onSelectPh
       <div className="viewer-content">
         {viewMode === 'grid'
           ? <PhotoGrid photos={photos} onSelectPhoto={onSelectPhoto} />
-          : <PhotoStrip photos={photos} onSelectPhoto={onSelectPhoto} />
+          : <PhotoNavigator
+              photos={photos}
+              pagination={pagination}
+              onPageChange={onPageChange}
+              onSelectPhoto={onSelectPhoto}
+            />
         }
       </div>
 
-      {pages > 1 && (
+      {viewMode === 'grid' && pages > 1 && (
         <div className="pagination">
           <button
             className="pagination-btn"

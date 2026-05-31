@@ -81,7 +81,7 @@ export default function App() {
         <PhotoViewer
           photos={photos}
           viewMode={viewMode}
-          onToggleView={() => setViewMode(m => m === 'grid' ? 'strip' : 'grid')}
+          onToggleView={() => setViewMode(m => m === 'grid' ? 'navigator' : 'grid')}
           onSelectPhoto={setSelectedPhoto}
           pagination={pagination}
           onPageChange={handlePageChange}
