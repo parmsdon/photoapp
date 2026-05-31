@@ -23,7 +23,7 @@ def generate_location_tags(lat, lon):
         return []
     try:
         import reverse_geocoder as rg
-        results = rg.search((lat, lon), verbose=False)
+        results = rg.search([(float(lat), float(lon))], verbose=False)
         if not results:
             return []
         r = results[0]

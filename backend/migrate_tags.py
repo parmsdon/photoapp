@@ -107,12 +107,13 @@ def build_location_sets():
         print("  [WARN] reverse_geocoder not installed — location sub-type classification skipped")
         return set(), set(), set()
 
-    coords = (
-        db.session.query(Photo.latitude, Photo.longitude)
+    coords = [
+        (float(lat), float(lon))
+        for lat, lon in db.session.query(Photo.latitude, Photo.longitude)
         .filter(Photo.latitude.isnot(None))
         .distinct()
         .all()
-    )
+    ]
     if not coords:
         return set(), set(), set()
 
