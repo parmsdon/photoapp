@@ -190,7 +190,11 @@
 /* Type colours (dot + chip background) */
 .type-source   { background-color: #4a90d9; }
 .type-location { background-color: #27ae60; }
-.type-date     { background-color: #8e44ad; }
+.type-region   { background-color: #229954; }
+.type-country  { background-color: #1e8449; }
+.type-year     { background-color: #8e44ad; }
+.type-month    { background-color: #7d3c98; }
+.type-season   { background-color: #6c3483; }
 .type-people   { background-color: #e67e22; }
 .type-event    { background-color: #e74c3c; }
 .type-general  { background-color: #7f8c8d; }

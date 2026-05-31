@@ -4,14 +4,18 @@ import './TagPanel.css';
 const CATEGORY_LABELS = {
   source:   'Source',
   location: 'Location',
-  date:     'Date',
+  region:   'Region',
+  country:  'Country',
+  year:     'Year',
+  month:    'Month',
+  season:   'Season',
   people:   'People',
   event:    'Event',
   general:  'General',
 };
 
 export default function TagPanel({ categories, activeFilters, photoCount, onAddFilter, onRemoveFilter }) {
-  const [expanded, setExpanded] = useState({ source: true, date: true, location: true });
+  const [expanded, setExpanded] = useState({ source: true, year: true, location: true });
 
   const toggle = (type) => setExpanded(prev => ({ ...prev, [type]: !prev[type] }));
   const isActive = (tag) => activeFilters.some(f => f.id === tag.id);
