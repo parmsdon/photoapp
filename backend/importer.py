@@ -16,6 +16,7 @@ from flask import Flask
 import config
 import tagger
 from models import db, Photo, Tag
+from rotate_utils import auto_rotate
 
 SUPPORTED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".heic"}
 
@@ -231,6 +232,19 @@ def main():
         dest_filename = os.path.basename(dest)
 
         shutil.copy2(filepath, dest)
+
+        # Apply EXIF auto-rotation to the stored copy; update hash if changed
+        try:
+            from PIL import Image
+            with Image.open(dest) as img:
+                corrected, was_rotated = auto_rotate(img)
+                if was_rotated:
+                    if corrected.mode not in ("RGB", "L"):
+                        corrected = corrected.convert("RGB")
+                    corrected.save(dest, quality=95)
+                    file_hash = md5(dest)
+        except Exception:
+            pass
 
         date_taken, latitude, longitude = extract_exif(filepath)
 
