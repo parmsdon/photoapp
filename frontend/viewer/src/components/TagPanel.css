@@ -183,6 +183,11 @@
   flex-shrink: 0;
 }
 
+.tag-count.contextual {
+  color: #4a7a9b;
+  font-style: italic;
+}
+
 .tag-item.active .tag-count {
   color: #4a80b8;
 }

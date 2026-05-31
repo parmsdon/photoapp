@@ -7,19 +7,11 @@ import { API_BASE } from './config';
 const API = `${API_BASE}/api`;
 
 export default function App() {
-  const [categories, setCategories] = useState({});
   const [activeFilters, setActiveFilters] = useState([]); // [{id, name, tag_type}]
   const [photos, setPhotos] = useState([]);
   const [pagination, setPagination] = useState({ total: 0, page: 1, pages: 1, per_page: 50 });
   const [viewMode, setViewMode] = useState('grid');
   const [selectedPhoto, setSelectedPhoto] = useState(null);
-
-  useEffect(() => {
-    fetch(`${API}/tags/categories`)
-      .then(r => r.json())
-      .then(setCategories)
-      .catch(console.error);
-  }, []);
 
   const fetchPhotos = useCallback((filters, page) => {
     const tagIds = filters.map(f => f.id).join(',');
@@ -69,7 +61,6 @@ export default function App() {
     <div className="app">
       <div className="tag-panel-wrapper">
         <TagPanel
-          categories={categories}
           activeFilters={activeFilters}
           photoCount={pagination.total}
           onAddFilter={addFilter}

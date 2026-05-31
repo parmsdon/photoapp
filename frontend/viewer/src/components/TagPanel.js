@@ -1,5 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import './TagPanel.css';
+import { API_BASE } from '../config';
+
+const API = `${API_BASE}/api`;
 
 const CATEGORY_LABELS = {
   location: 'Town/City',
@@ -14,8 +17,22 @@ const CATEGORY_LABELS = {
   source:   'Source',
 };
 
-export default function TagPanel({ categories, activeFilters, photoCount, onAddFilter, onRemoveFilter }) {
-  const [expanded, setExpanded] = useState({ source: true, year: true, location: true });
+export default function TagPanel({ activeFilters, photoCount, onAddFilter, onRemoveFilter }) {
+  const [categories, setCategories] = useState({});
+  const [expanded, setExpanded] = useState({ source: false, year: true, location: true });
+
+  const isContextual = activeFilters.length > 0;
+
+  useEffect(() => {
+    const tagIds = activeFilters.map(f => f.id).join(',');
+    const url = tagIds
+      ? `${API}/tags/available?tags=${tagIds}`
+      : `${API}/tags/available`;
+    fetch(url)
+      .then(r => r.json())
+      .then(setCategories)
+      .catch(console.error);
+  }, [activeFilters]);
 
   const toggle = (type) => setExpanded(prev => ({ ...prev, [type]: !prev[type] }));
   const isActive = (tag) => activeFilters.some(f => f.id === tag.id);
@@ -72,7 +89,9 @@ export default function TagPanel({ categories, activeFilters, photoCount, onAddF
                       onClick={() => !isActive(tag) && onAddFilter({ ...tag, tag_type: type })}
                     >
                       <span className="tag-name">{tag.name}</span>
-                      <span className="tag-count">{tag.count}</span>
+                      <span className={`tag-count${isContextual ? ' contextual' : ''}`}>
+                        {tag.count}
+                      </span>
                     </li>
                   ))}
                 </ul>

@@ -110,6 +110,54 @@ def list_tags():
     return jsonify([t.to_dict() for t in tags])
 
 
+@app.route("/api/tags/available")
+def available_tags():
+    from sqlalchemy import func
+
+    tags_raw = request.args.get("tags", "")
+    tag_ids = [int(t) for t in tags_raw.split(",") if t.strip().isdigit()]
+
+    if not tag_ids:
+        # No active filters — return all tags with full library counts
+        rows = (
+            db.session.query(Tag, func.count(PhotoTag.photo_id).label("count"))
+            .join(PhotoTag, PhotoTag.tag_id == Tag.id)
+            .group_by(Tag.id)
+            .order_by(Tag.tag_type, Tag.name)
+            .all()
+        )
+    else:
+        # Find photos matching ALL selected tags
+        photo_query = Photo.query
+        for tag_id in tag_ids:
+            photo_query = photo_query.filter(Photo.tags.any(Tag.id == tag_id))
+        filtered_ids = [p.id for p in photo_query.with_entities(Photo.id).all()]
+
+        if not filtered_ids:
+            return jsonify({})
+
+        # Count remaining (non-selected) tags across the filtered photo set
+        rows = (
+            db.session.query(Tag, func.count(PhotoTag.photo_id).label("count"))
+            .join(PhotoTag, PhotoTag.tag_id == Tag.id)
+            .filter(PhotoTag.photo_id.in_(filtered_ids))
+            .filter(Tag.id.notin_(tag_ids))
+            .group_by(Tag.id)
+            .order_by(Tag.tag_type, Tag.name)
+            .all()
+        )
+
+    result = {}
+    for tag, count in rows:
+        result.setdefault(tag.tag_type, []).append({
+            "id": tag.id,
+            "name": tag.name,
+            "count": count,
+        })
+
+    return jsonify(result)
+
+
 @app.route("/api/tags/categories")
 def tag_categories():
     from sqlalchemy import func
