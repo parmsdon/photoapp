@@ -40,3 +40,4 @@ Thumbs.db
 # Photos
 source_photos/
 processed_photos/
+backend/thumbnails/

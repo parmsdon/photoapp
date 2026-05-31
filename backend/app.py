@@ -1,5 +1,8 @@
+import os
+
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
+from PIL import Image
 
 import config
 from models import db, Photo, Tag, PhotoTag
@@ -10,6 +13,8 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 CORS(app)
 db.init_app(app)
+
+THUMBNAIL_DIR = os.path.join(config.BASE_DIR, "thumbnails")
 
 with app.app_context():
     db.create_all()
@@ -25,6 +30,56 @@ def list_photos():
         query = query.join(Photo.tags).filter(Tag.name == tag_filter)
     photos = query.order_by(Photo.date_taken.desc().nullslast(), Photo.created_at.desc()).all()
     return jsonify([p.to_dict() for p in photos])
+
+
+@app.route("/api/photos/filter")
+def filter_photos():
+    tags_raw = request.args.get("tags", "")
+    tag_ids = [int(t) for t in tags_raw.split(",") if t.strip().isdigit()]
+    page = max(1, int(request.args.get("page", 1)))
+    per_page = min(max(1, int(request.args.get("per_page", 50))), 100)
+
+    query = Photo.query
+    for tag_id in tag_ids:
+        query = query.filter(Photo.tags.any(Tag.id == tag_id))
+    query = query.order_by(Photo.date_taken.desc().nullslast(), Photo.created_at.desc())
+
+    total = query.count()
+    photos = query.offset((page - 1) * per_page).limit(per_page).all()
+
+    return jsonify({
+        "photos": [p.to_dict() for p in photos],
+        "total": total,
+        "page": page,
+        "per_page": per_page,
+        "pages": max(1, (total + per_page - 1) // per_page),
+    })
+
+
+@app.route("/api/photos/thumbnail/<int:photo_id>")
+def photo_thumbnail(photo_id):
+    os.makedirs(THUMBNAIL_DIR, exist_ok=True)
+    thumb_filename = f"{photo_id}.jpg"
+    thumb_path = os.path.join(THUMBNAIL_DIR, thumb_filename)
+
+    if not os.path.exists(thumb_path):
+        photo = Photo.query.get_or_404(photo_id)
+        try:
+            img = Image.open(photo.filepath)
+            img.thumbnail((300, 300))
+            if img.mode not in ("RGB", "L"):
+                img = img.convert("RGB")
+            img.save(thumb_path, "JPEG", quality=85)
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+    return send_from_directory(THUMBNAIL_DIR, thumb_filename)
+
+
+@app.route("/api/photos/full/<int:photo_id>")
+def photo_full(photo_id):
+    photo = Photo.query.get_or_404(photo_id)
+    return send_from_directory(os.path.dirname(photo.filepath), os.path.basename(photo.filepath))
 
 
 @app.route("/api/photos/<int:photo_id>", methods=["GET"])
@@ -44,10 +99,7 @@ def delete_photo(photo_id):
 @app.route("/api/photos/<int:photo_id>/file")
 def serve_photo(photo_id):
     photo = Photo.query.get_or_404(photo_id)
-    import os
-    directory = os.path.dirname(photo.filepath)
-    filename = os.path.basename(photo.filepath)
-    return send_from_directory(directory, filename)
+    return send_from_directory(os.path.dirname(photo.filepath), os.path.basename(photo.filepath))
 
 
 # --- Tags ---
@@ -58,11 +110,37 @@ def list_tags():
     return jsonify([t.to_dict() for t in tags])
 
 
+@app.route("/api/tags/categories")
+def tag_categories():
+    from sqlalchemy import func
+
+    TAG_TYPES = ["source", "location", "date", "people", "event", "general"]
+
+    rows = (
+        db.session.query(Tag, func.count(PhotoTag.photo_id).label("count"))
+        .outerjoin(PhotoTag, PhotoTag.tag_id == Tag.id)
+        .group_by(Tag.id)
+        .order_by(Tag.name)
+        .all()
+    )
+
+    result = {t: [] for t in TAG_TYPES}
+    for tag, count in rows:
+        if tag.tag_type in result:
+            result[tag.tag_type].append({
+                "id": tag.id,
+                "name": tag.name,
+                "count": count,
+            })
+
+    return jsonify(result)
+
+
 @app.route("/api/tags", methods=["POST"])
 def create_tag():
     data = request.get_json(force=True)
     name = data.get("name", "").strip()
-    tag_type = data.get("tag_type", "user").strip()
+    tag_type = data.get("tag_type", "general").strip()
     if not name:
         return jsonify({"error": "name is required"}), 400
     tag = Tag.query.filter_by(name=name, tag_type=tag_type).first()
@@ -100,4 +178,4 @@ def remove_tag_from_photo(photo_id, tag_id):
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    app.run(host='0.0.0.0', port=5000, debug=True)
