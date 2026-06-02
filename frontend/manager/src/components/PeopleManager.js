@@ -260,6 +260,14 @@ export default function PeopleManager({ afterTagOperation }) {
     afterTagOperation();
   }
 
+  // Cancel merge on Escape while merge mode is active
+  useEffect(() => {
+    if (!mergingId) return;
+    const handler = e => { if (e.key === 'Escape') cancelMerge(); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [mergingId]); // eslint-disable-line react-hooks/exhaustive-deps
+
   function startMerge(cluster) {
     mergeSourcePageRef.current = pageRef.current; // remember the page the source was on
     setMergingId(cluster.id);

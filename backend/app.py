@@ -659,11 +659,16 @@ def assign_face():
     cluster = PersonCluster.query.get_or_404(cluster_id)
     face.cluster_id  = cluster_id
     face.person_name = cluster.name
+    cluster.face_count += 1
+    # Ensure the people tag exists; create if missing
+    tag = Tag.query.filter_by(name=cluster.name, tag_type="people").first()
+    if not tag:
+        tag = Tag(name=cluster.name, tag_type="people")
+        db.session.add(tag)
+        db.session.flush()
     photo = Photo.query.get(face.photo_id)
-    if photo:
-        tag = Tag.query.filter_by(name=cluster.name, tag_type="people").first()
-        if tag and tag not in photo.tags:
-            photo.tags.append(tag)
+    if photo and tag not in photo.tags:
+        photo.tags.append(tag)
     db.session.commit()
     return jsonify({"assigned": face_id, "cluster_id": cluster_id})
 
@@ -730,6 +735,7 @@ def face_editor_photos():
     filter_type = request.args.get("filter", "all")
     person_id   = request.args.get("person_id", type=int)
     page        = max(1, request.args.get("page", 1, type=int))
+    per_page    = min(max(1, request.args.get("per_page", 1, type=int)), 100)
 
     # Base: photos that have at least one face record
     query = Photo.query.filter(
@@ -756,20 +762,15 @@ def face_editor_photos():
 
     query = query.order_by(Photo.date_taken.desc().nullslast(), Photo.created_at.desc())
     total = query.count()
-    photo = query.offset(page - 1).first()
 
-    if not photo:
-        return jsonify({"photo": None, "total": total, "page": page, "pages": total})
-
-    faces = Face.query.filter_by(photo_id=photo.id).all()
-    try:
-        with Image.open(photo.filepath) as img:
-            iw, ih = img.size
-    except Exception:
-        iw = ih = None
-
-    return jsonify({
-        "photo": {
+    def photo_dict(photo):
+        faces = Face.query.filter_by(photo_id=photo.id).all()
+        try:
+            with Image.open(photo.filepath) as img:
+                iw, ih = img.size
+        except Exception:
+            iw = ih = None
+        return {
             "id": photo.id,
             "filename": photo.filename,
             "date_taken": photo.date_taken.isoformat() if photo.date_taken else None,
@@ -785,8 +786,21 @@ def face_editor_photos():
                 "bbox_left":  f.bbox_left,
                 "manual":     f.manual,
             } for f in faces],
-        },
-        "total": total, "page": page, "pages": total,
+        }
+
+    if per_page == 1:
+        # Single mode — existing behaviour
+        photo = query.offset(page - 1).first()
+        if not photo:
+            return jsonify({"photo": None, "total": total, "page": page, "pages": total})
+        return jsonify({"photo": photo_dict(photo), "total": total, "page": page, "pages": total})
+
+    # Grid mode — return multiple photos per page
+    pages = max(1, (total + per_page - 1) // per_page)
+    photos = query.offset((page - 1) * per_page).limit(per_page).all()
+    return jsonify({
+        "photos":   [photo_dict(p) for p in photos],
+        "total":    total, "page": page, "pages": pages, "per_page": per_page,
     })
 
 
@@ -859,10 +873,80 @@ def create_empty_cluster():
     # uniqueness even after deletions (count-based naming would not).
     cluster = PersonCluster(name="__pending__", face_count=0, sample_photo_id=None)
     db.session.add(cluster)
-    db.session.flush()                          # assigns cluster.id
+    db.session.flush()
     cluster.name = f"Person_{cluster.id:05d}"
+    # Create the corresponding people tag so assignment works immediately
+    tag = Tag.query.filter_by(name=cluster.name, tag_type="people").first()
+    if not tag:
+        db.session.add(Tag(name=cluster.name, tag_type="people"))
     db.session.commit()
     return jsonify(cluster.to_dict()), 201
+
+
+@app.route("/api/people/fix-tags")
+def fix_person_tags():
+    """One-time utility: create missing people tags and associate them with the correct photos."""
+    clusters = PersonCluster.query.all()
+    tags_created = 0
+    photos_tagged = 0
+
+    for cluster in clusters:
+        # Get or create the people tag for this cluster
+        tag = Tag.query.filter_by(name=cluster.name, tag_type="people").first()
+        if not tag:
+            tag = Tag(name=cluster.name, tag_type="people")
+            db.session.add(tag)
+            db.session.flush()
+            tags_created += 1
+
+        # Find all photos with faces from this cluster
+        photo_ids = {f.photo_id for f in Face.query.filter_by(cluster_id=cluster.id).all()}
+        for photo in Photo.query.filter(Photo.id.in_(photo_ids)).all():
+            if tag not in photo.tags:
+                photo.tags.append(tag)
+                photos_tagged += 1
+
+    db.session.commit()
+    return jsonify({"tags_created": tags_created, "photos_tagged": photos_tagged})
+
+
+@app.route("/api/people/fix-counts")
+def fix_person_counts():
+    """One-time utility: recalculate face_count and verify sample_photo_id for every cluster."""
+    from sqlalchemy import func
+    counts = dict(
+        db.session.query(Face.cluster_id, func.count(Face.id))
+        .filter(Face.cluster_id.isnot(None))
+        .group_by(Face.cluster_id)
+        .all()
+    )
+    # First face photo_id per cluster (for sample fallback)
+    first_face = dict(
+        db.session.query(Face.cluster_id, Face.photo_id)
+        .filter(Face.cluster_id.isnot(None))
+        .distinct(Face.cluster_id)
+        .all()
+    )
+    clusters = PersonCluster.query.all()
+    samples_fixed = 0
+    for c in clusters:
+        c.face_count = counts.get(c.id, 0)
+        # Verify sample_photo_id has a face from this cluster
+        if c.sample_photo_id is not None:
+            valid = Face.query.filter_by(
+                cluster_id=c.id, photo_id=c.sample_photo_id
+            ).first() is not None
+        else:
+            valid = False
+        if not valid:
+            c.sample_photo_id = first_face.get(c.id)  # None if cluster has no faces
+            samples_fixed += 1
+    db.session.commit()
+    return jsonify({
+        "clusters_fixed": len(clusters),
+        "samples_fixed": samples_fixed,
+        "counts": {str(k): v for k, v in counts.items()},
+    })
 
 
 # --- Face suggestion review ---

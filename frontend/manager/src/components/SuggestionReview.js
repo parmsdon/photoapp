@@ -1,8 +1,17 @@
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import './SuggestionReview.css';
 import { API_BASE } from '../config';
 
 const API = `${API_BASE}/api`;
+
+const FACE_COLORS = [
+  '#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6',
+  '#1abc9c', '#e67e22', '#e91e63', '#00bcd4', '#8bc34a',
+];
+function faceColor(clusterId) {
+  if (!clusterId) return '#FFD700';
+  return FACE_COLORS[(clusterId - 1) % FACE_COLORS.length];
+}
 
 function gapLabel(gap) {
   const pct = (gap * 100).toFixed(1);
@@ -16,6 +25,13 @@ export default function SuggestionReview({ cluster, onClose, afterTagOperation }
   const [computing, setComputing] = useState(false);
   const [loading, setLoading]     = useState(false);
   const [computed, setComputed]   = useState(false);
+
+  // ── Lightbox ──────────────────────────────────────────────────────────────
+  const [lightboxOpen, setLightboxOpen]       = useState(false);
+  const [lightboxFaces, setLightboxFaces]     = useState([]);
+  const [lightboxBoxes, setLightboxBoxes]     = useState([]);
+  const [lbImgSize, setLbImgSize]             = useState({ w: 0, h: 0 });
+  const lbImgRef = useRef(null);
 
   const fetchSuggestions = useCallback((thresh) => {
     setLoading(true);
@@ -37,7 +53,55 @@ export default function SuggestionReview({ cluster, onClose, afterTagOperation }
     fetchSuggestions(threshold);
   }
 
-  // Accept one specific alternative — backend marks all siblings reviewed
+  // ── Lightbox handlers ─────────────────────────────────────────────────────
+
+  function openLightbox() {
+    if (!current) return;
+    setLightboxOpen(true);
+    setLbImgSize({ w: 0, h: 0 });
+    fetch(`${API_BASE}/api/photos/${current.photo_id}/faces`)
+      .then(r => r.json())
+      .then(setLightboxFaces)
+      .catch(() => setLightboxFaces([]));
+  }
+
+  function closeLightbox() {
+    setLightboxOpen(false);
+    setLightboxBoxes([]);
+  }
+
+  function handleLbImgLoad() {
+    const img = lbImgRef.current;
+    if (img) setLbImgSize({ w: img.clientWidth, h: img.clientHeight });
+  }
+
+  // Scale face bboxes to rendered image dimensions
+  useEffect(() => {
+    if (!lbImgSize.w || !lightboxFaces.length) { setLightboxBoxes([]); return; }
+    const iw = lightboxFaces[0]?.image_width;
+    if (!iw) { setLightboxBoxes([]); return; }
+    const sx = lbImgSize.w / iw;
+    const sy = lbImgSize.h / lightboxFaces[0].image_height;
+    setLightboxBoxes(lightboxFaces.map(f => ({
+      id: f.id, cluster_id: f.cluster_id, person_name: f.person_name,
+      x: f.bbox.left * sx, y: f.bbox.top * sy,
+      w: (f.bbox.right - f.bbox.left) * sx,
+      h: (f.bbox.bottom - f.bbox.top) * sy,
+    })));
+  }, [lbImgSize, lightboxFaces]);
+
+  // Escape key closes lightbox
+  useEffect(() => {
+    if (!lightboxOpen) return;
+    const handler = e => { if (e.key === 'Escape') closeLightbox(); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [lightboxOpen]);
+
+  // Close lightbox when the current suggestion changes
+  useEffect(() => { setLightboxOpen(false); }, [currentIndex]);
+
+  // ── Accept one specific alternative — backend marks all siblings reviewed
   async function handleChange(suggestionId) {
     await fetch(`${API}/people/suggestions/accept`, {
       method: 'POST',
@@ -57,6 +121,7 @@ export default function SuggestionReview({ cluster, onClose, afterTagOperation }
   const allDone = computed && !loading && currentIndex >= suggestions.length;
 
   return (
+    <>
     <div className="sr-overlay" onClick={onClose}>
       <div className="sr-modal" onClick={e => e.stopPropagation()}>
 
@@ -131,9 +196,11 @@ export default function SuggestionReview({ cluster, onClose, afterTagOperation }
               {/* Centre — ambiguous face + skip */}
               <div className="sr-col sr-col-face">
                 <div className="sr-col-label">Ambiguous face</div>
-                <div className="sr-crop sr-crop-face">
+                <div className="sr-crop sr-crop-face sr-crop-clickable" onClick={openLightbox}
+                  title="Click to see full photo">
                   <img src={`${API_BASE}${current.face_crop_url}`} alt="face" />
                 </div>
+                <span className="sr-face-hint">click to see full photo</span>
                 <div className={`sr-gap-label${current.alternatives[0]?.confidence_gap < 0 ? ' sr-gap-strong' : ''}`}>
                   {gapLabel(current.alternatives[0]?.confidence_gap ?? 0)}
                 </div>
@@ -171,5 +238,37 @@ export default function SuggestionReview({ cluster, onClose, afterTagOperation }
         )}
       </div>
     </div>
+
+    {/* ── Lightbox — above the modal ── */}
+    {lightboxOpen && current && (
+      <div className="sr-lightbox-overlay" onClick={closeLightbox}>
+        <button className="sr-lightbox-close" onClick={e => { e.stopPropagation(); closeLightbox(); }}>✕</button>
+        <div
+          className="sr-lightbox-wrapper"
+          style={lbImgSize.w ? { width: lbImgSize.w, height: lbImgSize.h } : {}}
+          onClick={e => e.stopPropagation()}
+        >
+          <img
+            ref={lbImgRef}
+            className="sr-lightbox-img"
+            src={`${API_BASE}/api/photos/full/${current.photo_id}`}
+            alt="Full photo"
+            onLoad={handleLbImgLoad}
+          />
+          {lightboxBoxes.map(face => {
+            const color = faceColor(face.cluster_id);
+            return (
+              <div key={face.id} className="sr-lb-face-box"
+                style={{ left: face.x, top: face.y, width: face.w, height: face.h, borderColor: color }}>
+                <span className="sr-lb-face-label" style={{ background: color }}>
+                  {face.person_name || '?'}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    )}
+    </>
   );
 }

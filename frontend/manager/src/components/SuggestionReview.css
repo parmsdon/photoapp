@@ -193,6 +193,20 @@
   height: 150px;
 }
 
+.sr-crop-clickable {
+  cursor: zoom-in;
+  transition: opacity 0.15s;
+}
+.sr-crop-clickable:hover { opacity: 0.85; }
+
+.sr-face-hint {
+  font-size: 10px;
+  color: var(--text-faint);
+  font-style: italic;
+  text-align: center;
+  margin-top: -4px;
+}
+
 .sr-crop img, .sr-crop-face img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
 .sr-person-name {
@@ -310,4 +324,68 @@
   font-size: 12px;
   color: var(--text-dim);
   font-variant-numeric: tabular-nums;
+}
+
+/* ── Lightbox ──────────────────────────────────────────────────────────────── */
+
+.sr-lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.92);
+  z-index: 800; /* above sr-overlay (700) and sr-modal */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sr-lightbox-close {
+  position: fixed;
+  top: 20px;
+  right: 24px;
+  background: none;
+  border: none;
+  color: #ccc;
+  font-size: 28px;
+  line-height: 1;
+  padding: 4px 8px;
+  border-radius: 4px;
+  z-index: 801;
+  cursor: pointer;
+}
+.sr-lightbox-close:hover { color: #fff; }
+
+.sr-lightbox-wrapper {
+  position: relative;
+  /* sized to rendered image dimensions after onLoad */
+}
+
+.sr-lightbox-img {
+  max-width: 90vw;
+  max-height: 90vh;
+  object-fit: contain;
+  display: block;
+  border-radius: 2px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+}
+
+.sr-lb-face-box {
+  position: absolute;
+  border: 2px solid;
+  box-sizing: border-box;
+  pointer-events: none;
+  background: rgba(255,255,255,0.04);
+}
+
+.sr-lb-face-label {
+  position: absolute;
+  bottom: -1px;
+  left: -1px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+  padding: 1px 5px;
+  border-radius: 0 3px 0 0;
+  white-space: nowrap;
+  line-height: 16px;
+  pointer-events: none;
 }
