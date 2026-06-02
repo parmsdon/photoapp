@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import './PeopleManager.css';
 import { API_BASE } from '../config';
 import PersonDetail from './PersonDetail';
+import SuggestionReview from './SuggestionReview';
 
 const API = `${API_BASE}/api`;
 
@@ -27,7 +28,7 @@ function calcPageSize(w, h) {
 function PersonCard({ cluster, isEditing, editName, onEditName, onSaveEdit, onCancelEdit,
                       isMergingSource, isMergeTarget, noActions,
                       onStartEdit, onStartMerge, onSelectTarget, onDeleteRequest,
-                      onDrillDown, refreshTrigger }) {
+                      onSuggest, onDrillDown, refreshTrigger }) {
   // Track which photo is currently shown (null = default sample)
   const [currentPhotoId, setCurrentPhotoId] = useState(null);
   const currentPhotoIdRef = useRef(null);
@@ -114,6 +115,8 @@ function PersonCard({ cluster, isEditing, editName, onEditName, onSaveEdit, onCa
                   onClick={e => { e.stopPropagation(); onStartMerge(cluster); }}>⇄</button>
                 <button className="card-action-btn delete-person-btn" title="Delete this person"
                   onClick={e => { e.stopPropagation(); onDeleteRequest(cluster); }}>🗑</button>
+                <button className="card-action-btn suggest-btn" title="Review face suggestions"
+                  onClick={e => { e.stopPropagation(); onSuggest(cluster); }}>≈</button>
               </div>
             )}
           </div>
@@ -156,8 +159,9 @@ export default function PeopleManager({ afterTagOperation }) {
   const [editingId, setEditingId]   = useState(null);
   const [editName, setEditName]     = useState('');
   const [mergingId, setMergingId]   = useState(null);
-  const [pendingMerge, setPendingMerge]   = useState(null);
-  const [pendingDelete, setPendingDelete] = useState(null); // cluster to confirm delete
+  const [pendingMerge, setPendingMerge]       = useState(null);
+  const [pendingDelete, setPendingDelete]     = useState(null);
+  const [reviewingCluster, setReviewingCluster] = useState(null); // for SuggestionReview overlay
   const [refreshAllTrigger, setRefreshAllTrigger] = useState(0);
 
   const containerRef     = useRef(null); // observe outer container, not the grid
@@ -339,6 +343,7 @@ export default function PeopleManager({ afterTagOperation }) {
               onStartMerge={startMerge}
               onSelectTarget={selectTarget}
               onDeleteRequest={setPendingDelete}
+              onSuggest={setReviewingCluster}
               onDrillDown={mergingId ? undefined : drillDown}
             />
           ))}
@@ -386,6 +391,14 @@ export default function PeopleManager({ afterTagOperation }) {
             </div>
           </div>
         </div>
+      )}
+
+      {reviewingCluster && (
+        <SuggestionReview
+          cluster={reviewingCluster}
+          onClose={() => setReviewingCluster(null)}
+          afterTagOperation={afterTagOperation}
+        />
       )}
     </div>
   );

@@ -57,6 +57,23 @@ class Tag(db.Model):
         }
 
 
+class FaceSuggestion(db.Model):
+    __tablename__ = "face_suggestions"
+
+    id                   = db.Column(db.Integer, primary_key=True)
+    face_id              = db.Column(db.Integer, db.ForeignKey("faces.id"), nullable=False, index=True)
+    current_cluster_id   = db.Column(db.Integer, db.ForeignKey("person_clusters.id"), nullable=False)
+    suggested_cluster_id = db.Column(db.Integer, db.ForeignKey("person_clusters.id"), nullable=False)
+    confidence_gap       = db.Column(db.Float, nullable=False)
+    rank                 = db.Column(db.Integer, default=1, nullable=False)  # 1=closest, 2, 3
+    reviewed             = db.Column(db.Boolean, default=False, nullable=False)
+    created_at           = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    face              = db.relationship("Face",          foreign_keys=[face_id])
+    current_cluster   = db.relationship("PersonCluster", foreign_keys=[current_cluster_id])
+    suggested_cluster = db.relationship("PersonCluster", foreign_keys=[suggested_cluster_id])
+
+
 class PhotoTag(db.Model):
     __tablename__ = "photo_tags"
 

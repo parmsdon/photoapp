@@ -7,7 +7,7 @@ from flask_cors import CORS
 from PIL import Image
 
 import config
-from models import db, Face, PersonCluster, Photo, Tag, PhotoTag
+from models import db, Face, FaceSuggestion, PersonCluster, Photo, Tag, PhotoTag
 
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = config.SQLALCHEMY_DATABASE_URI
@@ -863,6 +863,161 @@ def create_empty_cluster():
     cluster.name = f"Person_{cluster.id:05d}"
     db.session.commit()
     return jsonify(cluster.to_dict()), 201
+
+
+# --- Face suggestion review ---
+
+@app.route("/api/people/suggestions/compute", methods=["POST"])
+def compute_suggestions():
+    import numpy as np
+
+    data       = request.get_json(force=True)
+    cluster_id = data.get("cluster_id")
+    max_gap    = float(data.get("max_gap", 0.15))
+    PersonCluster.query.get_or_404(cluster_id)
+
+    # Clear existing unreviewed suggestions for this cluster
+    FaceSuggestion.query.filter_by(current_cluster_id=cluster_id, reviewed=False).delete()
+    db.session.flush()
+
+    # Build centroid (mean encoding) for every cluster that has encodings
+    all_faces = Face.query.filter(Face.cluster_id.isnot(None)).all()
+    enc_by_cluster: dict[int, list] = {}
+    for f in all_faces:
+        if f.encoding:
+            enc_by_cluster.setdefault(f.cluster_id, []).append(f.encoding)
+
+    centroids = {cid: np.mean(encs, axis=0) for cid, encs in enc_by_cluster.items()}
+    own_centroid = centroids.get(cluster_id)
+    if own_centroid is None:
+        db.session.commit()
+        return jsonify({"count": 0})
+
+    other_centroids = {cid: c for cid, c in centroids.items() if cid != cluster_id}
+    if not other_centroids:
+        db.session.commit()
+        return jsonify({"count": 0})
+
+    target_faces = Face.query.filter_by(cluster_id=cluster_id).all()
+    count = 0
+    for face in target_faces:
+        if not face.encoding:
+            continue
+        enc = np.array(face.encoding)
+        dist_own = float(np.linalg.norm(enc - own_centroid))
+
+        # Find top 3 closest other cluster centroids, sorted by distance
+        ranked = sorted(
+            ((cid, float(np.linalg.norm(enc - cent))) for cid, cent in other_centroids.items()),
+            key=lambda x: x[1]
+        )[:3]
+
+        for rank, (other_id, other_dist) in enumerate(ranked, 1):
+            gap = other_dist - dist_own
+            if gap >= max_gap:
+                break  # sorted by distance, so later ones are farther — stop early
+            db.session.add(FaceSuggestion(
+                face_id=face.id,
+                current_cluster_id=cluster_id,
+                suggested_cluster_id=other_id,
+                confidence_gap=gap,
+                rank=rank,
+                reviewed=False,
+            ))
+            count += 1
+
+    db.session.commit()
+    return jsonify({"count": count})
+
+
+@app.route("/api/people/suggestions")
+def get_suggestions():
+    from collections import defaultdict
+
+    cluster_id = request.args.get("cluster_id", type=int)
+    max_gap    = request.args.get("max_gap", 0.15, type=float)
+    if not cluster_id:
+        return jsonify({"error": "cluster_id required"}), 400
+
+    rows = (FaceSuggestion.query
+            .filter_by(current_cluster_id=cluster_id, reviewed=False)
+            .filter(FaceSuggestion.confidence_gap <= max_gap)
+            .order_by(FaceSuggestion.face_id, FaceSuggestion.rank)
+            .all())
+
+    # Group by face_id — one entry per face with up to 3 alternatives
+    grouped: dict = defaultdict(list)
+    for s in rows:
+        grouped[s.face_id].append(s)
+
+    result = []
+    for face_id, suggestions in grouped.items():
+        face = Face.query.get(face_id)
+        if not face:
+            continue
+        first = suggestions[0]
+        result.append({
+            "face_id":               face_id,
+            "photo_id":              face.photo_id,
+            "face_crop_url":         f"/api/people/faces/{face_id}/crop",
+            "photo_thumbnail_url":   f"/api/photos/thumbnail/{face.photo_id}",
+            "current_cluster_id":    first.current_cluster_id,
+            "current_cluster_name":  first.current_cluster.name if first.current_cluster else None,
+            "current_sample_crop_url": f"/api/people/clusters/{first.current_cluster_id}/face-crop",
+            "alternatives": [
+                {
+                    "suggestion_id":  s.id,
+                    "rank":           s.rank,
+                    "cluster_id":     s.suggested_cluster_id,
+                    "cluster_name":   s.suggested_cluster.name if s.suggested_cluster else None,
+                    "sample_crop_url": f"/api/people/clusters/{s.suggested_cluster_id}/face-crop",
+                    "confidence_gap": round(s.confidence_gap, 4),
+                }
+                for s in suggestions
+            ],
+        })
+    return jsonify(result)
+
+
+@app.route("/api/people/suggestions/accept", methods=["POST"])
+def accept_suggestion():
+    suggestion_id = request.get_json(force=True).get("suggestion_id")
+    s = FaceSuggestion.query.get_or_404(suggestion_id)
+    face = Face.query.get(s.face_id)
+    if face:
+        old_cid = face.cluster_id
+        new_cid = s.suggested_cluster_id
+        face.cluster_id  = new_cid
+        new_cluster = PersonCluster.query.get(new_cid)
+        face.person_name = new_cluster.name if new_cluster else None
+        db.session.flush()
+        photo = Photo.query.get(face.photo_id)
+        if photo:
+            if old_cid:
+                remaining = Face.query.filter_by(cluster_id=old_cid, photo_id=face.photo_id).count()
+                if remaining == 0:
+                    old_cluster = PersonCluster.query.get(old_cid)
+                    if old_cluster:
+                        old_tag = Tag.query.filter_by(name=old_cluster.name, tag_type="people").first()
+                        if old_tag and old_tag in photo.tags:
+                            photo.tags.remove(old_tag)
+            if new_cluster:
+                new_tag = Tag.query.filter_by(name=new_cluster.name, tag_type="people").first()
+                if new_tag and new_tag not in photo.tags:
+                    photo.tags.append(new_tag)
+    # Mark all suggestions for this face as reviewed (siblings no longer relevant)
+    FaceSuggestion.query.filter_by(face_id=s.face_id, reviewed=False).update({"reviewed": True})
+    db.session.commit()
+    return jsonify({"accepted": suggestion_id})
+
+
+@app.route("/api/people/suggestions/reject", methods=["POST"])
+def reject_suggestion():
+    suggestion_id = request.get_json(force=True).get("suggestion_id")
+    s = FaceSuggestion.query.get_or_404(suggestion_id)
+    s.reviewed = True
+    db.session.commit()
+    return jsonify({"rejected": suggestion_id})
 
 
 if __name__ == "__main__":

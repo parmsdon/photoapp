@@ -53,12 +53,55 @@ def add_manual_to_faces(conn):
     print("  manual: added to faces table")
 
 
+def add_face_suggestions_table(conn):
+    tables = {r[0] for r in conn.execute(text(
+        "SELECT name FROM sqlite_master WHERE type='table'"
+    )).fetchall()}
+    if "face_suggestions" in tables:
+        print("  face_suggestions: already exists — skipped")
+        return
+    conn.execute(text("""
+        CREATE TABLE face_suggestions (
+            id                   INTEGER NOT NULL PRIMARY KEY,
+            face_id              INTEGER NOT NULL REFERENCES faces(id),
+            current_cluster_id   INTEGER NOT NULL REFERENCES person_clusters(id),
+            suggested_cluster_id INTEGER NOT NULL REFERENCES person_clusters(id),
+            confidence_gap       REAL    NOT NULL,
+            reviewed             BOOLEAN NOT NULL DEFAULT 0,
+            created_at           DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+    """))
+    conn.execute(text(
+        "CREATE INDEX ix_face_suggestions_face_id ON face_suggestions(face_id)"
+    ))
+    conn.commit()
+    print("  face_suggestions: table created")
+
+
+def add_rank_to_face_suggestions(conn):
+    tables = {r[0] for r in conn.execute(text(
+        "SELECT name FROM sqlite_master WHERE type='table'"
+    )).fetchall()}
+    if "face_suggestions" not in tables:
+        print("  face_suggestions.rank: table doesn't exist yet — skipped")
+        return
+    cols = {r[1] for r in conn.execute(text("PRAGMA table_info(face_suggestions)")).fetchall()}
+    if "rank" in cols:
+        print("  face_suggestions.rank: already exists — skipped")
+        return
+    conn.execute(text("ALTER TABLE face_suggestions ADD COLUMN rank INTEGER NOT NULL DEFAULT 1"))
+    conn.commit()
+    print("  face_suggestions.rank: added")
+
+
 def main():
     print("Running database migrations...\n")
     with db.engine.connect() as conn:
         add_processed_faces(conn)
         add_protected_to_tags(conn)
         add_manual_to_faces(conn)
+        add_face_suggestions_table(conn)
+        add_rank_to_face_suggestions(conn)
     print("\nDone.")
 
 
