@@ -1,0 +1,362 @@
+.people-manager {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+  background: var(--bg-app);
+}
+
+/* ── Header ──────────────────────────────────────────────────────────── */
+
+.people-header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 10px 14px 8px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  background: var(--bg-bar);
+}
+
+.people-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.people-count { font-size: 12px; color: var(--text-dim); flex: 1; }
+
+.people-refresh-all-btn {
+  background: var(--bg-btn);
+  border: none;
+  color: var(--text-btn);
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+}
+.people-refresh-all-btn:hover { background: var(--bg-btn-hover); color: var(--text-btn-hover); }
+
+/* ── Merge banner ────────────────────────────────────────────────────── */
+
+.merge-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  background: #2a1f05;
+  color: #f0c070;
+  font-size: 13px;
+  border-bottom: 1px solid #4e3818;
+  flex-shrink: 0;
+  gap: 12px;
+}
+
+.merge-banner-cancel {
+  background: #3a2a10;
+  border: none;
+  color: #f0c070;
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.merge-banner-cancel:hover { background: #4e3818; }
+
+/* ── Grid ────────────────────────────────────────────────────────────── */
+
+.people-grid {
+  /* Cards are fixed 180px wide; gap and padding match JS constants */
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 180px);
+  gap: 10px;
+  padding: 12px;
+  align-content: start;
+  overflow: hidden;   /* no scroll — paginate instead */
+  flex: 1;
+  min-height: 0;
+}
+
+.people-empty {
+  padding: 40px;
+  text-align: center;
+  color: var(--text-empty);
+  font-size: 14px;
+  font-style: italic;
+}
+
+/* ── Person card — fixed 180 × 260 ──────────────────────────────────── */
+
+.person-card {
+  width: 180px;
+  height: 260px;
+  background: var(--bg-panel);
+  border-radius: 6px;
+  overflow: hidden;
+  border: 2px solid transparent;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  display: flex;
+  flex-direction: column;
+}
+
+.person-card.card-merging-source {
+  border-color: #e8a84a;
+  box-shadow: 0 0 0 1px #e8a84a33;
+}
+
+.person-card.card-merge-target {
+  border-color: var(--border-subtle);
+  cursor: pointer;
+}
+
+.person-card.card-merge-target:hover {
+  border-color: #4a90d9;
+  box-shadow: 0 0 0 1px #4a90d933;
+}
+
+/* ── Unidentified card special styling ───────────────────────────────── */
+
+.unidentified-card { cursor: pointer; }
+.unidentified-card:hover { border-color: var(--text-accent-dim); }
+
+.unidentified-thumb {
+  background: var(--bg-surface-alt);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 180px;
+  height: 180px;
+}
+
+.unidentified-q {
+  font-size: 64px;
+  color: var(--text-empty);
+  line-height: 1;
+}
+
+/* ── Face-crop thumbnail (square 180 × 180) ──────────────────────────── */
+
+.card-thumb {
+  position: relative;
+  width: 180px;
+  height: 180px;
+  flex-shrink: 0;
+  background: var(--bg-surface);
+  overflow: hidden;
+}
+
+.card-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
+
+/* ↻ cycle button — appears on thumbnail hover */
+.card-cycle-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: rgba(0,0,0,0.55);
+  border: none;
+  color: rgba(255,255,255,0.85);
+  font-size: 16px;
+  line-height: 1;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s, background 0.15s;
+  z-index: 2;
+}
+
+.person-card:hover .card-cycle-btn { opacity: 1; }
+.card-cycle-btn:hover { background: rgba(0,0,0,0.8); color: #fff; }
+
+.card-source-badge {
+  position: absolute;
+  bottom: 6px;
+  left: 6px;
+  background: #e8a84a;
+  color: #1a0d00;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ── Card body (80px) ────────────────────────────────────────────────── */
+
+.card-body {
+  flex: 1;
+  padding: 8px 8px 6px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 0;
+}
+
+.card-info-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.card-name {
+  flex: 1;
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card-face-count {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+/* Action buttons — visible on hover */
+
+.card-actions {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.person-card:hover .card-actions { opacity: 1; }
+
+.card-action-btn {
+  background: none;
+  border: none;
+  color: var(--text-faint);
+  font-size: 13px;
+  padding: 2px 4px;
+  border-radius: 3px;
+  line-height: 1;
+  transition: background 0.1s, color 0.1s;
+}
+
+.card-action-btn:hover        { background: var(--bg-btn); }
+.card-action-btn.edit-btn:hover  { color: #7ab8ff; }
+.card-action-btn.merge-btn:hover { color: #f0c070; }
+.card-action-btn.confirm-btn { color: #2ecc71; }
+.card-action-btn.cancel-btn  { color: #e74c3c; }
+
+/* Inline rename input */
+
+.card-name-input {
+  width: 100%;
+  background: var(--bg-surface);
+  border: 1px solid var(--accent-blue);
+  color: var(--text-primary);
+  border-radius: 3px;
+  padding: 2px 6px;
+  font-size: 12px;
+  font-family: inherit;
+  outline: none;
+  margin-bottom: 4px;
+}
+
+.card-edit-actions { display: flex; gap: 4px; }
+
+/* ── Pagination ──────────────────────────────────────────────────────── */
+
+.people-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 8px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  background: var(--bg-bar);
+}
+
+.pp-btn {
+  background: var(--bg-btn);
+  border: none;
+  color: var(--text-btn);
+  padding: 5px 14px;
+  border-radius: 4px;
+  font-size: 12px;
+  transition: background 0.15s;
+}
+
+.pp-btn:hover:not(:disabled) { background: var(--bg-btn-hover); color: var(--text-btn-hover); }
+.pp-btn:disabled { opacity: 0.35; pointer-events: none; }
+
+.pp-info {
+  font-size: 12px;
+  color: var(--text-dim);
+  min-width: 80px;
+  text-align: center;
+}
+
+/* ── Merge confirmation overlay ──────────────────────────────────────── */
+
+.merge-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.merge-confirm {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px 18px 16px;
+  width: 320px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+}
+
+.merge-confirm-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+}
+
+.merge-confirm-msg {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+.merge-confirm-actions { display: flex; justify-content: flex-end; gap: 8px; }
+
+.dc-btn {
+  border: none;
+  border-radius: 4px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-family: inherit;
+}
+
+.dc-cancel { background: var(--bg-btn); color: var(--text-btn); }
+.dc-cancel:hover { background: var(--bg-btn-hover); color: var(--text-btn-hover); }
+.dc-merge  { background: #1e3a5f; color: #7ab8ff; }
+.dc-merge:hover  { background: #254a78; }
+
+.dc-delete-person { background: #5a1e1e; color: #ff8888; }
+.dc-delete-person:hover { background: #7a2424; }
+
+.card-action-btn.delete-person-btn:hover { color: #e74c3c; }

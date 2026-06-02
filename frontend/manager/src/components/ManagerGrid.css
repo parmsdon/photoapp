@@ -1,0 +1,108 @@
+.manager-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 3px;
+  padding: 3px;
+  align-content: start;
+  flex: 1;
+  min-height: 0;
+  background: var(--bg-app);
+}
+
+.manager-thumb {
+  padding-bottom: 100%;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  background: var(--bg-surface);
+  outline: 2px solid transparent;
+  outline-offset: -2px;
+  transition: outline-color 0.1s;
+}
+
+.manager-thumb.selected {
+  outline-color: #4a90d9;
+}
+
+.manager-thumb img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
+
+/* ── Checkbox ──────────────────────────────────────────────────── */
+
+.thumb-checkbox {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255,255,255,0.85);
+  border-radius: 4px;
+  background: rgba(0,0,0,0.35);
+  z-index: 3;
+  opacity: 0;
+  transition: opacity 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.thumb-checkbox.checked {
+  background: #4a90d9;
+  border-color: #4a90d9;
+  opacity: 1;
+}
+
+.thumb-checkmark {
+  color: #fff;
+  font-size: 12px;
+  line-height: 1;
+  font-weight: 700;
+}
+
+.manager-thumb:hover .thumb-checkbox {
+  opacity: 1;
+}
+
+/* ── Hover overlay ─────────────────────────────────────────────── */
+
+.thumb-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.65) 0%, transparent 45%);
+  opacity: 0;
+  transition: opacity 0.2s;
+  display: flex;
+  align-items: flex-end;
+  padding: 7px;
+  pointer-events: none;
+}
+
+.manager-thumb:hover .thumb-overlay {
+  opacity: 1;
+}
+
+.thumb-filename {
+  font-size: 11px;
+  color: #ddd;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
+.manager-grid-empty {
+  grid-column: 1 / -1;
+  padding: 40px;
+  text-align: center;
+  color: var(--text-empty);
+  font-size: 15px;
+  font-style: italic;
+}

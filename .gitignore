@@ -41,3 +41,4 @@ Thumbs.db
 source_photos/
 processed_photos/
 backend/thumbnails/
+backend/face_crops/

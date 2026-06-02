@@ -1,0 +1,108 @@
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal {
+  background: var(--bg-panel);
+  border-radius: 8px;
+  width: 420px;
+  max-height: 75vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+  border: 1px solid var(--border);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 16px;
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+
+.modal-close:hover { color: var(--text-primary); background: var(--bg-btn); }
+
+.modal-search {
+  padding: 10px 14px;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-size: 13px;
+  outline: none;
+  flex-shrink: 0;
+}
+
+.modal-search::placeholder { color: var(--text-dim); }
+
+.modal-tag-list { overflow-y: auto; flex: 1; }
+
+.modal-section-label {
+  padding: 8px 14px 3px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-faint);
+  font-weight: 600;
+}
+
+.modal-tag-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-primary);
+  transition: background 0.1s;
+}
+
+.modal-tag-item:hover { background: var(--bg-item-hover); }
+
+.modal-new-tag {
+  color: var(--text-accent);
+  font-weight: 500;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.modal-new-tag-icon { font-size: 16px; line-height: 1; }
+
+.modal-type-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Reuse type colours from TagPanel */
+.type-source   { background-color: #4a90d9; }
+.type-location { background-color: #27ae60; }
+.type-region   { background-color: #229954; }
+.type-country  { background-color: #1e8449; }
+.type-year     { background-color: #8e44ad; }
+.type-month    { background-color: #7d3c98; }
+.type-season   { background-color: #6c3483; }
+.type-people   { background-color: #e67e22; }
+.type-event    { background-color: #e74c3c; }
+.type-general  { background-color: #7f8c8d; }

@@ -36,9 +36,8 @@ export default function PhotoViewer({
           <button
             className={`view-toggle-btn${showFaces ? ' active' : ''}`}
             onClick={onToggleShowFaces}
-            title={showFaces ? 'Hide face boxes' : 'Show face boxes'}
           >
-            Faces
+            {showFaces ? 'Hide Faces' : 'Show Faces'}
           </button>
         </div>
       </div>

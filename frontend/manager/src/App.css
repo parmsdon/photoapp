@@ -1,0 +1,100 @@
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--bg-app);
+  color: var(--text-primary);
+}
+
+/* ── Full-width tab bar ──────────────────────────────────────────────────── */
+
+.app-tab-bar {
+  display: flex;
+  gap: 0;
+  padding: 0 12px;
+  background: var(--bg-bar);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.app-tab-btn {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  padding: 9px 22px 8px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color 0.15s;
+}
+
+.app-tab-btn:hover { color: var(--text-secondary); }
+
+.app-tab-btn.active {
+  color: var(--text-primary);
+  border-bottom-color: var(--accent-blue);
+}
+
+.settings-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 14px;
+  background: var(--bg-bar);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.settings-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.settings-btn {
+  background: var(--bg-btn);
+  border: none;
+  color: var(--text-btn);
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.settings-btn:hover {
+  background: var(--bg-btn-hover);
+  color: var(--text-btn-hover);
+}
+
+.main-content {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.tag-panel-wrapper {
+  width: 30%;
+  min-width: 220px;
+  max-width: 380px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--border);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.manager-area {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}

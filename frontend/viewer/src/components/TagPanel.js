@@ -20,7 +20,7 @@ const CATEGORY_LABELS = {
 
 const EXPANDED_STORAGE_KEY = 'photoapp-tag-expanded';
 
-export default function TagPanel({ activeFilters, photoCount, onAddFilter, onRemoveFilter }) {
+export default function TagPanel({ activeFilters, photoCount, onAddFilter, onRemoveFilter, refreshTrigger }) {
   const [categories, setCategories] = useState({});
   const [expanded, setExpanded] = useState(() => {
     try {
@@ -32,6 +32,13 @@ export default function TagPanel({ activeFilters, photoCount, onAddFilter, onRem
   });
 
   const isContextual = activeFilters.length > 0;
+
+  // Poll every 30 seconds to stay in sync with manager changes
+  const [pollTick, setPollTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setPollTick(n => n + 1), 30_000);
+    return () => clearInterval(id);
+  }, []);
 
   // Persist expanded state
   useEffect(() => {
@@ -48,7 +55,7 @@ export default function TagPanel({ activeFilters, photoCount, onAddFilter, onRem
       .then(r => r.json())
       .then(setCategories)
       .catch(console.error);
-  }, [activeFilters]);
+  }, [activeFilters, refreshTrigger, pollTick]);
 
   const toggle  = (type) => setExpanded(prev => ({ ...prev, [type]: !prev[type] }));
   const isActive = (tag)  => activeFilters.some(f => f.id === tag.id);

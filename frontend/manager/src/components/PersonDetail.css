@@ -1,0 +1,227 @@
+.person-detail {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+  background: var(--bg-app);
+}
+
+/* ── Header ──────────────────────────────────────────────────────────── */
+
+.pd-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  background: var(--bg-bar);
+  height: 44px;
+}
+
+.pd-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.pd-breadcrumb-link {
+  background: none;
+  border: none;
+  color: var(--text-accent);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.pd-breadcrumb-link:hover { text-decoration: underline; }
+
+.pd-breadcrumb-sep {
+  color: var(--text-faint);
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.pd-breadcrumb-current {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pd-count { font-size: 12px; color: var(--text-dim); flex-shrink: 0; }
+
+/* ── Grid ────────────────────────────────────────────────────────────── */
+
+.pd-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 180px);
+  gap: 10px;
+  padding: 12px;
+  align-content: start;
+  overflow: hidden;
+  flex: 1;
+  min-height: 0;
+}
+
+.pd-empty {
+  padding: 40px;
+  text-align: center;
+  color: var(--text-empty);
+  font-size: 14px;
+  font-style: italic;
+}
+
+/* ── Photo card (180 × 220) ──────────────────────────────────────────── */
+
+.pd-card {
+  width: 180px;
+  height: 220px;
+  background: var(--bg-panel);
+  border-radius: 6px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-subtle);
+}
+
+.pd-thumb {
+  position: relative;
+  width: 180px;
+  height: 180px;
+  flex-shrink: 0;
+  background: var(--bg-surface);
+  overflow: hidden;
+}
+
+.pd-thumb img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
+
+/* ── Face bbox overlay ───────────────────────────────────────────────── */
+
+.pd-face-box {
+  position: absolute;
+  border: 2px solid #4ecdc4;
+  box-sizing: border-box;
+  background: rgba(78, 205, 196, 0.06);
+  z-index: 2;
+}
+
+.pd-disassociate-btn {
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  background: #4ecdc4;
+  border: none;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 0 0 3px 0;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.pd-face-box:hover .pd-disassociate-btn { opacity: 1; }
+.pd-face-box:hover { border-color: #e74c3c; background: rgba(231, 76, 60, 0.08); }
+.pd-face-box:hover .pd-disassociate-btn { background: #e74c3c; }
+
+/* ── Card info row ───────────────────────────────────────────────────── */
+
+.pd-info {
+  flex: 1;
+  padding: 5px 8px;
+  display: flex;
+  align-items: center;
+}
+
+.pd-filename {
+  font-size: 11px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Pagination (reuse pp-btn / pp-info from PeopleManager) ─────────── */
+
+.pd-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 8px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  background: var(--bg-bar);
+  height: 44px;
+}
+
+.pp-btn {
+  background: var(--bg-btn);
+  border: none;
+  color: var(--text-btn);
+  padding: 5px 14px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+.pp-btn:hover:not(:disabled) { background: var(--bg-btn-hover); color: var(--text-btn-hover); }
+.pp-btn:disabled { opacity: 0.35; pointer-events: none; }
+.pp-info { font-size: 12px; color: var(--text-dim); min-width: 80px; text-align: center; }
+
+/* ── Disassociate confirmation overlay ───────────────────────────────── */
+
+.pd-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pd-confirm {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px 18px 16px;
+  width: 320px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+}
+
+.pd-confirm-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+}
+
+.pd-confirm-msg {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+.pd-confirm-actions { display: flex; justify-content: flex-end; gap: 8px; }
+
+.dc-btn { border: none; border-radius: 4px; padding: 6px 14px; font-size: 12px; font-family: inherit; }
+.dc-cancel { background: var(--bg-btn); color: var(--text-btn); }
+.dc-cancel:hover { background: var(--bg-btn-hover); color: var(--text-btn-hover); }
+.dc-delete-person { background: #5a1e1e; color: #ff8888; }
+.dc-delete-person:hover { background: #7a2424; }

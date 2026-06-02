@@ -40,6 +40,7 @@ class Tag(db.Model):
     name = db.Column(db.String(255), nullable=False)
     # valid types: source, location, region, country, year, month, season, people, event, general
     tag_type = db.Column(db.String(50), nullable=False)
+    protected = db.Column(db.Boolean, default=False, nullable=False)
 
     __table_args__ = (
         db.UniqueConstraint("name", "tag_type", name="uq_tag_name_type"),
@@ -52,6 +53,7 @@ class Tag(db.Model):
             "id": self.id,
             "name": self.name,
             "tag_type": self.tag_type,
+            "protected": self.protected,
         }
 
 
@@ -122,6 +124,7 @@ class Face(db.Model):
     bbox_right = db.Column(db.Integer, nullable=False)
     bbox_bottom = db.Column(db.Integer, nullable=False)
     bbox_left = db.Column(db.Integer, nullable=False)
+    manual = db.Column(db.Boolean, default=False, nullable=False)
 
     photo = db.relationship("Photo", foreign_keys=[photo_id])
     cluster = db.relationship("PersonCluster", back_populates="faces", foreign_keys=[cluster_id])
@@ -132,6 +135,7 @@ class Face(db.Model):
             "photo_id": self.photo_id,
             "cluster_id": self.cluster_id,
             "person_name": self.person_name,
+            "manual": self.manual,
             "bbox": {
                 "top": self.bbox_top,
                 "right": self.bbox_right,

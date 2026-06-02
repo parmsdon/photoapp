@@ -1,0 +1,368 @@
+/* ── Overall container ────────────────────────────────────────────────────── */
+
+.fe-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg-app);
+}
+
+.fe-main {
+  display: flex;
+  flex: 1;
+  min-height: 0;    /* critical: allows children to shrink below natural size */
+  overflow: hidden;
+}
+
+/* ── Left: Person panel (25%) ─────────────────────────────────────────────── */
+
+.fe-person-panel {
+  width: 25%;
+  min-width: 180px;
+  max-width: 300px;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-panel);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+/* Assign mode — amber tint when a face is selected */
+.fe-person-panel.fe-assign-mode .fe-person-item {
+  cursor: pointer;
+}
+.fe-person-panel.fe-assign-mode .fe-person-item:hover {
+  background: #2a1e00;
+  color: #f0c070;
+}
+.fe-person-panel.fe-assign-mode .fe-person-item:hover .fe-person-name {
+  color: #f0c070;
+}
+
+.fe-panel-header {
+  padding: 10px 12px 6px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-faint);
+  font-weight: 600;
+  flex-shrink: 0;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+}
+
+.fe-panel-assign {
+  background: #2a1e00;
+  color: #f0c070;
+  border-bottom: 1px solid #4e3800;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.fe-search {
+  margin: 0 10px 6px;
+  padding: 6px 10px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: inherit;
+  outline: none;
+  flex-shrink: 0;
+}
+.fe-search:focus { border-color: var(--accent-blue); }
+.fe-search::placeholder { color: var(--text-dim); }
+
+.fe-person-list {
+  overflow-y: auto;
+  flex: 1;
+  padding-bottom: 8px;
+}
+
+.fe-person-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.fe-person-item:hover  { background: var(--bg-item-hover); }
+.fe-person-item.active { background: var(--bg-tag-active); }
+
+.fe-person-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.fe-person-name {
+  flex: 1;
+  font-size: 12px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fe-person-item.active .fe-person-name { color: var(--text-accent); }
+
+.fe-person-count {
+  font-size: 11px;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+
+/* ── Right: Photo panel ───────────────────────────────────────────────────── */
+
+.fe-photo-panel {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── Photo display area — fills all remaining space, never scrolls ─────── */
+
+.fe-photo-area {
+  flex: 1;
+  min-height: 0;          /* allows flex shrink past natural height */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: #080808;
+  position: relative;     /* face boxes positioned relative to this */
+  cursor: crosshair;
+}
+
+.fe-state-msg {
+  color: var(--text-empty);
+  font-size: 15px;
+  font-style: italic;
+}
+
+.fe-photo-img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  display: block;
+  user-select: none;
+  pointer-events: none;   /* clicks pass through to photo area */
+}
+
+/* ── Face bounding boxes ──────────────────────────────────────────────────── */
+
+.fe-face-box {
+  position: absolute;
+  border: 2px solid;
+  box-sizing: border-box;
+  cursor: pointer;
+  background: rgba(255,255,255,0.03);
+  border-radius: 2px;
+  transition: background 0.1s;
+}
+
+.fe-face-box:hover    { background: rgba(255,255,255,0.10); }
+.fe-face-box.fe-selected { border-width: 3px; background: rgba(255,255,255,0.10); }
+
+/* Manual faces rendered as circles */
+.fe-face-box.fe-circle {
+  border-radius: 50%;
+  border-style: dashed;
+}
+.fe-face-box.fe-circle.fe-selected { border-style: solid; }
+
+.fe-face-label {
+  position: absolute;
+  bottom: -1px;
+  left: -1px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+  padding: 1px 5px;
+  border-radius: 0 3px 0 0;
+  white-space: nowrap;
+  pointer-events: none;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 16px;
+}
+
+/* Dark text on the bright yellow "?" label for legibility */
+.fe-face-box[style*="FFD700"] .fe-face-label {
+  color: #1a1a00;
+}
+
+/* For circles, label is outside — pull it below the circle */
+.fe-circle .fe-face-label {
+  bottom: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-radius: 3px;
+  text-align: center;
+}
+
+/* ── Action panel — fixed 120px, always visible ──────────────────────────── */
+
+.fe-action-panel {
+  flex-shrink: 0;
+  height: 120px;
+  padding: 10px 16px;
+  background: var(--bg-bar);
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+}
+
+.fe-action-who {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.fe-action-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.fe-manual-tag {
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--text-dim);
+  background: var(--bg-surface-alt);
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+
+.fe-action-btns {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.fe-assign-hint {
+  font-size: 12px;
+  color: var(--text-accent-dim);
+  font-style: italic;
+}
+
+.fe-btn {
+  background: var(--bg-btn);
+  border: none;
+  color: var(--text-btn);
+  padding: 5px 11px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: inherit;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+}
+.fe-btn:hover       { background: var(--bg-btn-hover); color: var(--text-btn-hover); }
+.fe-btn-delete      { background: #3a1a1a; color: #ff8888; }
+.fe-btn-delete:hover { background: #5a1e1e; }
+
+/* Idle state (no face selected) */
+.fe-action-idle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.fe-sep { color: var(--text-faint); }
+
+.fe-ready {
+  color: var(--text-accent);
+  font-size: 12px;
+}
+
+/* ── Bottom navigation bar ────────────────────────────────────────────────── */
+
+.fe-nav-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  height: 44px;
+  background: var(--bg-bar);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  gap: 12px;
+}
+
+.fe-filter-select {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  color: var(--text-btn);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: inherit;
+  flex-shrink: 0;
+  max-width: 200px;
+}
+
+.fe-nav-center {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  justify-content: center;
+  min-width: 0;
+}
+
+.fe-nav-btn {
+  background: var(--bg-btn);
+  border: none;
+  color: var(--text-btn);
+  padding: 5px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+}
+.fe-nav-btn:hover:not(:disabled) { background: var(--bg-btn-hover); color: var(--text-btn-hover); }
+.fe-nav-btn:disabled { opacity: 0.35; pointer-events: none; }
+
+.fe-nav-counter {
+  font-size: 12px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  min-width: 60px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.fe-nav-filename {
+  font-size: 12px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  max-width: 260px;
+  text-align: right;
+  flex-shrink: 1;
+}

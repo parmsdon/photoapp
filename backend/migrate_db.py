@@ -31,10 +31,34 @@ def add_processed_faces(conn):
     print("  processed_faces: added to photos table")
 
 
+def add_protected_to_tags(conn):
+    if column_exists(conn, "tags", "protected"):
+        print("  protected: already exists — skipped")
+        return
+    conn.execute(text(
+        "ALTER TABLE tags ADD COLUMN protected BOOLEAN NOT NULL DEFAULT 0"
+    ))
+    conn.commit()
+    print("  protected: added to tags table")
+
+
+def add_manual_to_faces(conn):
+    if column_exists(conn, "faces", "manual"):
+        print("  manual: already exists — skipped")
+        return
+    conn.execute(text(
+        "ALTER TABLE faces ADD COLUMN manual BOOLEAN NOT NULL DEFAULT 0"
+    ))
+    conn.commit()
+    print("  manual: added to faces table")
+
+
 def main():
     print("Running database migrations...\n")
     with db.engine.connect() as conn:
         add_processed_faces(conn)
+        add_protected_to_tags(conn)
+        add_manual_to_faces(conn)
     print("\nDone.")
 
 

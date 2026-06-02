@@ -1,0 +1,67 @@
+/* Shares overlay/modal/header/close/type-dot classes with AssignTagModal.css */
+
+.remove-modal-info {
+  padding: 10px 14px;
+  font-size: 12px;
+  color: var(--text-dim);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.remove-modal-empty {
+  padding: 20px 14px;
+  font-size: 13px;
+  color: var(--text-empty);
+  font-style: italic;
+}
+
+.remove-tag-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.modal-type-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.remove-tag-name {
+  flex: 1;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.remove-tag-type {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.remove-tag-btn {
+  background: #3d1515;
+  border: none;
+  color: #ff8888;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+.remove-tag-btn:hover { background: #5a1e1e; }
+
+/* Type dot colours */
+.type-source   { background-color: #4a90d9; }
+.type-location { background-color: #27ae60; }
+.type-region   { background-color: #229954; }
+.type-country  { background-color: #1e8449; }
+.type-year     { background-color: #8e44ad; }
+.type-month    { background-color: #7d3c98; }
+.type-season   { background-color: #6c3483; }
+.type-people   { background-color: #e67e22; }
+.type-event    { background-color: #e74c3c; }
+.type-general  { background-color: #7f8c8d; }
