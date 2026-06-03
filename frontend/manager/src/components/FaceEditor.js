@@ -157,8 +157,20 @@ export default function FaceEditor({ afterTagOperation }) {
     fetch(url)
       .then(r => r.json())
       .then(data => {
-        setCurrentPhoto(data.photo);
-        setTotalPages(data.pages || 0);
+        const total = data.total || 0;
+        const pages = data.pages || 0;
+
+        // If we're past the end of the list (e.g. last photo was removed),
+        // clamp to the new last valid page and let the effect refetch.
+        if (data.photo === null && total > 0 && page > total) {
+          setTotalPages(total);
+          setCurrentPage(total); // triggers useEffect → fetchPhoto(total, filter)
+          setLoading(false);
+          return;
+        }
+
+        setCurrentPhoto(data.photo); // null → clean empty state
+        setTotalPages(pages);
         setSelectedFaceId(null);
         setScaledFaces([]);
         setLoading(false);
@@ -505,8 +517,9 @@ export default function FaceEditor({ afterTagOperation }) {
         <div className="fe-nav-left-group">
           <select className="fe-filter-select" value={filterValue}
             onChange={e => { setFilterValue(e.target.value); setCurrentPage(1); setGridPage(1); }}>
-            <option value="all">All photos with faces</option>
-            <option value="unidentified">Photos with ? faces</option>
+            <option value="all">All Photos</option>
+            <option value="faces">All Photos with Faces</option>
+            <option value="unidentified">Photos with ? Faces</option>
             <optgroup label="By person">
               {clusters.map(c => (
                 <option key={c.id} value={`person:${c.id}`}>{c.name}</option>
@@ -526,6 +539,8 @@ export default function FaceEditor({ afterTagOperation }) {
         <div className="fe-nav-center">
           {viewMode === 'single' ? (
             <>
+              <button className="fe-nav-btn fe-nav-jump" disabled={currentPage <= 10}
+                onClick={() => setCurrentPage(p => Math.max(1, p - 10))}>−10</button>
               <button className="fe-nav-btn" disabled={currentPage <= 1}
                 onClick={() => setCurrentPage(p => p - 1)}>← Prev</button>
               <span className="fe-nav-counter">
@@ -533,9 +548,13 @@ export default function FaceEditor({ afterTagOperation }) {
               </span>
               <button className="fe-nav-btn" disabled={currentPage >= totalPages}
                 onClick={() => setCurrentPage(p => p + 1)}>Next →</button>
+              <button className="fe-nav-btn fe-nav-jump" disabled={currentPage > totalPages - 10}
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 10))}>+10</button>
             </>
           ) : (
             <>
+              <button className="fe-nav-btn fe-nav-jump" disabled={gridPage <= 10}
+                onClick={() => setGridPage(p => Math.max(1, p - 10))}>−10</button>
               <button className="fe-nav-btn" disabled={gridPage <= 1}
                 onClick={() => setGridPage(p => p - 1)}>← Prev</button>
               <span className="fe-nav-counter">
@@ -543,6 +562,8 @@ export default function FaceEditor({ afterTagOperation }) {
               </span>
               <button className="fe-nav-btn" disabled={gridPage >= gridPages}
                 onClick={() => setGridPage(p => p + 1)}>Next →</button>
+              <button className="fe-nav-btn fe-nav-jump" disabled={gridPage > gridPages - 10}
+                onClick={() => setGridPage(p => Math.min(gridPages, p + 10))}>+10</button>
             </>
           )}
         </div>

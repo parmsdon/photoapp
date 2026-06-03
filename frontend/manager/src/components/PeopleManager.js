@@ -406,6 +406,7 @@ export default function PeopleManager({ afterTagOperation }) {
           cluster={reviewingCluster}
           onClose={() => setReviewingCluster(null)}
           afterTagOperation={afterTagOperation}
+          onComplete={fetchClusters}
         />
       )}
     </div>

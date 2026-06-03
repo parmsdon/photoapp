@@ -376,6 +376,22 @@
   background: rgba(255,255,255,0.04);
 }
 
+.sr-lb-filename {
+  position: fixed;
+  bottom: 16px;
+  right: 20px;
+  font-size: 11px;
+  color: rgba(255,255,255,0.85);
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+  pointer-events: none;
+  z-index: 801;
+  max-width: 40vw;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: right;
+}
+
 .sr-lb-face-label {
   position: absolute;
   bottom: -1px;

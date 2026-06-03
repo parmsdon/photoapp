@@ -669,6 +669,14 @@ def assign_face():
     photo = Photo.query.get(face.photo_id)
     if photo and tag not in photo.tags:
         photo.tags.append(tag)
+    # Set sample photo for newly created clusters (no sample yet)
+    if cluster.sample_photo_id is None:
+        cluster.sample_photo_id = face.photo_id
+        # Remove any stale cached crop so it regenerates from the correct photo
+        for crop_name in (f"{cluster_id}.jpg", f"{cluster_id}_face.jpg"):
+            crop_path = os.path.join(FACE_CROPS_DIR, crop_name)
+            if os.path.exists(crop_path):
+                os.remove(crop_path)
     db.session.commit()
     return jsonify({"assigned": face_id, "cluster_id": cluster_id})
 
@@ -737,10 +745,14 @@ def face_editor_photos():
     page        = max(1, request.args.get("page", 1, type=int))
     per_page    = min(max(1, request.args.get("per_page", 1, type=int)), 100)
 
-    # Base: photos that have at least one face record
-    query = Photo.query.filter(
-        sql_exists().where(Face.photo_id == Photo.id)
-    )
+    # Base query
+    query = Photo.query
+
+    # 'faces' and narrower filters all require at least one face record
+    if filter_type in ("faces", "unidentified", "person"):
+        query = query.filter(
+            sql_exists().where(Face.photo_id == Photo.id)
+        )
 
     if filter_type == "unidentified":
         query = query.filter(
@@ -1040,9 +1052,11 @@ def get_suggestions():
         if not face:
             continue
         first = suggestions[0]
+        photo = Photo.query.get(face.photo_id)
         result.append({
             "face_id":               face_id,
             "photo_id":              face.photo_id,
+            "filename":              photo.filename if photo else None,
             "face_crop_url":         f"/api/people/faces/{face_id}/crop",
             "photo_thumbnail_url":   f"/api/photos/thumbnail/{face.photo_id}",
             "current_cluster_id":    first.current_cluster_id,

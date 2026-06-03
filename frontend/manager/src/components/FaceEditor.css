@@ -414,7 +414,8 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  flex-shrink: 0;
+  justify-self: start;   /* pin to the left edge of its 1fr column */
+  min-width: 0;
 }
 
 .fe-view-toggle {
@@ -428,15 +429,17 @@
 }
 
 .fe-nav-bar {
-  display: flex;
+  /* Three-column grid: left and right each take 1fr so the auto-sized
+     centre column is always exactly centred regardless of content width. */
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
   padding: 0 14px;
   height: 44px;
   background: var(--bg-bar);
   border-top: 1px solid var(--border);
   flex-shrink: 0;
-  gap: 12px;
+  gap: 8px;
 }
 
 .fe-filter-select {
@@ -455,9 +458,8 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  flex: 1;
-  justify-content: center;
-  min-width: 0;
+  justify-content: center; /* centred within its auto-sized column */
+  white-space: nowrap;
 }
 
 .fe-nav-btn {
@@ -474,6 +476,15 @@
 .fe-nav-btn:hover:not(:disabled) { background: var(--bg-btn-hover); color: var(--text-btn-hover); }
 .fe-nav-btn:disabled { opacity: 0.35; pointer-events: none; }
 
+/* Larger-jump buttons — slightly muted to show secondary importance */
+.fe-nav-jump {
+  padding: 5px 8px;
+  font-size: 11px;
+  color: var(--text-dim);
+  background: var(--bg-surface-alt);
+}
+.fe-nav-jump:hover:not(:disabled) { color: var(--text-btn-hover); }
+
 .fe-nav-counter {
   font-size: 12px;
   color: var(--text-muted);
@@ -489,8 +500,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  min-width: 0;
-  max-width: 260px;
+  min-width: 0;          /* allows text-overflow to work inside the 1fr column */
   text-align: right;
-  flex-shrink: 1;
+  justify-self: end;     /* pin to the right edge of its 1fr column */
 }

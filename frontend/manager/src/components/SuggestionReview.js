@@ -18,13 +18,15 @@ function gapLabel(gap) {
   return gap < 0 ? `${pct}% (closer to suggestion)` : `Gap: ${pct}%`;
 }
 
-export default function SuggestionReview({ cluster, onClose, afterTagOperation }) {
+export default function SuggestionReview({ cluster, onClose, afterTagOperation, onComplete }) {
   const [threshold, setThreshold] = useState(0.15);
   const [suggestions, setSuggestions] = useState([]); // face-level entries
   const [currentIndex, setCurrentIndex] = useState(0);
   const [computing, setComputing] = useState(false);
   const [loading, setLoading]     = useState(false);
   const [computed, setComputed]   = useState(false);
+
+  function handleClose() { onComplete?.(); onClose(); }
 
   // ── Lightbox ──────────────────────────────────────────────────────────────
   const [lightboxOpen, setLightboxOpen]       = useState(false);
@@ -122,7 +124,7 @@ export default function SuggestionReview({ cluster, onClose, afterTagOperation }
 
   return (
     <>
-    <div className="sr-overlay" onClick={onClose}>
+    <div className="sr-overlay" onClick={handleClose}>
       <div className="sr-modal" onClick={e => e.stopPropagation()}>
 
         {/* ── Header ── */}
@@ -140,7 +142,7 @@ export default function SuggestionReview({ cluster, onClose, afterTagOperation }
               </span>
             )}
           </span>
-          <button className="sr-close-x" onClick={onClose}>✕</button>
+          <button className="sr-close-x" onClick={handleClose}>✕</button>
         </div>
 
         {/* ── Controls ── */}
@@ -175,7 +177,7 @@ export default function SuggestionReview({ cluster, onClose, afterTagOperation }
         {allDone && suggestions.length > 0 && (
           <div className="sr-complete">
             <p>All {suggestions.length} face{suggestions.length !== 1 ? 's' : ''} reviewed!</p>
-            <button className="sr-done-btn" onClick={onClose}>Done</button>
+            <button className="sr-done-btn" onClick={handleClose}>Done</button>
           </div>
         )}
 
@@ -267,6 +269,9 @@ export default function SuggestionReview({ cluster, onClose, afterTagOperation }
             );
           })}
         </div>
+        {current.filename && (
+          <div className="sr-lb-filename">{current.filename}</div>
+        )}
       </div>
     )}
     </>
