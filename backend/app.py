@@ -1,7 +1,7 @@
 import json
 import os
 
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, abort, jsonify, request, send_from_directory
 from sqlalchemy import select as sa_select
 from flask_cors import CORS
 from PIL import Image
@@ -91,7 +91,7 @@ def photo_thumbnail(photo_id):
     thumb_path = os.path.join(THUMBNAIL_DIR, thumb_filename)
 
     if not os.path.exists(thumb_path):
-        photo = Photo.query.get_or_404(photo_id)
+        photo = db.session.get(Photo, photo_id) or abort(404)
         try:
             img = Image.open(photo.filepath)
             img.thumbnail((300, 300))
@@ -106,19 +106,19 @@ def photo_thumbnail(photo_id):
 
 @app.route("/api/photos/full/<int:photo_id>")
 def photo_full(photo_id):
-    photo = Photo.query.get_or_404(photo_id)
+    photo = db.session.get(Photo, photo_id) or abort(404)
     return send_from_directory(os.path.dirname(photo.filepath), os.path.basename(photo.filepath))
 
 
 @app.route("/api/photos/<int:photo_id>", methods=["GET"])
 def get_photo(photo_id):
-    photo = Photo.query.get_or_404(photo_id)
+    photo = db.session.get(Photo, photo_id) or abort(404)
     return jsonify(photo.to_dict())
 
 
 @app.route("/api/photos/<int:photo_id>", methods=["DELETE"])
 def delete_photo(photo_id):
-    photo = Photo.query.get_or_404(photo_id)
+    photo = db.session.get(Photo, photo_id) or abort(404)
     db.session.delete(photo)
     db.session.commit()
     return jsonify({"deleted": photo_id})
@@ -126,7 +126,7 @@ def delete_photo(photo_id):
 
 @app.route("/api/photos/<int:photo_id>/faces")
 def get_photo_faces(photo_id):
-    photo = Photo.query.get_or_404(photo_id)
+    photo = db.session.get(Photo, photo_id) or abort(404)
     faces = Face.query.filter_by(photo_id=photo_id).all()
     if not faces:
         return jsonify([])
@@ -143,7 +143,7 @@ def get_photo_faces(photo_id):
 
 @app.route("/api/photos/<int:photo_id>/file")
 def serve_photo(photo_id):
-    photo = Photo.query.get_or_404(photo_id)
+    photo = db.session.get(Photo, photo_id) or abort(404)
     return send_from_directory(os.path.dirname(photo.filepath), os.path.basename(photo.filepath))
 
 
@@ -285,12 +285,12 @@ def create_tag():
 
 @app.route("/api/photos/<int:photo_id>/tags", methods=["POST"])
 def add_tag_to_photo(photo_id):
-    photo = Photo.query.get_or_404(photo_id)
+    photo = db.session.get(Photo, photo_id) or abort(404)
     data = request.get_json(force=True)
     tag_id = data.get("tag_id")
     if not tag_id:
         return jsonify({"error": "tag_id is required"}), 400
-    tag = Tag.query.get_or_404(tag_id)
+    tag = db.session.get(Tag, tag_id) or abort(404)
     if tag not in photo.tags:
         photo.tags.append(tag)
         db.session.commit()
@@ -299,8 +299,8 @@ def add_tag_to_photo(photo_id):
 
 @app.route("/api/photos/<int:photo_id>/tags/<int:tag_id>", methods=["DELETE"])
 def remove_tag_from_photo(photo_id, tag_id):
-    photo = Photo.query.get_or_404(photo_id)
-    tag = Tag.query.get_or_404(tag_id)
+    photo = db.session.get(Photo, photo_id) or abort(404)
+    tag = db.session.get(Tag, tag_id) or abort(404)
     if tag in photo.tags:
         photo.tags.remove(tag)
         db.session.commit()
@@ -328,7 +328,7 @@ def _save_recent(ids):
 
 @app.route("/api/tags/<int:tag_id>", methods=["DELETE"])
 def delete_tag(tag_id):
-    tag = Tag.query.get_or_404(tag_id)
+    tag = db.session.get(Tag, tag_id) or abort(404)
     if tag.protected:
         return jsonify({"error": "tag is protected and cannot be deleted"}), 403
     PhotoTag.query.filter_by(tag_id=tag_id).delete()
@@ -387,7 +387,7 @@ def assign_tag_bulk():
     tag_id = data.get("tag_id")
     if not photo_ids or not tag_id:
         return jsonify({"error": "photo_ids and tag_id required"}), 400
-    tag = Tag.query.get_or_404(tag_id)
+    tag = db.session.get(Tag, tag_id) or abort(404)
     photos = Photo.query.filter(Photo.id.in_(photo_ids)).all()
     for photo in photos:
         if tag not in photo.tags:
@@ -403,7 +403,7 @@ def remove_tag_bulk():
     tag_id = data.get("tag_id")
     if not photo_ids or not tag_id:
         return jsonify({"error": "photo_ids and tag_id required"}), 400
-    tag = Tag.query.get_or_404(tag_id)
+    tag = db.session.get(Tag, tag_id) or abort(404)
     photos = Photo.query.filter(Photo.id.in_(photo_ids)).all()
     for photo in photos:
         if tag in photo.tags:
@@ -442,7 +442,7 @@ def get_people_clusters():
 
 def _make_face_crop(cluster_id, face, crop_path):
     """Crop and save a 300×300 JPEG centred on face. Raises on error."""
-    photo = Photo.query.get_or_404(face.photo_id)
+    photo = db.session.get(Photo, face.photo_id) or abort(404)
     img = Image.open(photo.filepath)
     if img.mode not in ("RGB", "L"):
         img = img.convert("RGB")
@@ -482,7 +482,7 @@ def cluster_face_crop(cluster_id):
     crop_path = os.path.join(FACE_CROPS_DIR, crop_filename)
 
     if not os.path.exists(crop_path):
-        cluster = PersonCluster.query.get_or_404(cluster_id)
+        cluster = db.session.get(PersonCluster, cluster_id) or abort(404)
 
         if photo_id:
             face = Face.query.filter_by(cluster_id=cluster_id, photo_id=photo_id).first()
@@ -508,7 +508,7 @@ def cluster_face_crop(cluster_id):
 def next_face_sample(cluster_id):
     """Return a random photo_id for this cluster, excluding the current one."""
     import random as _rng
-    PersonCluster.query.get_or_404(cluster_id)
+    db.session.get(PersonCluster, cluster_id) or abort(404)
     exclude_id = request.args.get("exclude", type=int)
 
     q = db.session.query(Face.photo_id.distinct()).filter(Face.cluster_id == cluster_id)
@@ -524,7 +524,7 @@ def next_face_sample(cluster_id):
 
 @app.route("/api/people/clusters/<int:cluster_id>", methods=["DELETE"])
 def delete_person_cluster(cluster_id):
-    cluster = PersonCluster.query.get_or_404(cluster_id)
+    cluster = db.session.get(PersonCluster, cluster_id) or abort(404)
 
     # Remove the people tag and all its photo associations
     people_tag = Tag.query.filter_by(name=cluster.name, tag_type="people").first()
@@ -546,7 +546,7 @@ def delete_person_cluster(cluster_id):
 
 @app.route("/api/people/clusters/<int:cluster_id>/photos")
 def get_cluster_photos(cluster_id):
-    PersonCluster.query.get_or_404(cluster_id)
+    db.session.get(PersonCluster, cluster_id) or abort(404)
     page     = max(1, request.args.get("page",     1,  type=int))
     per_page = min(max(1, request.args.get("per_page", 50, type=int)), 100)
 
@@ -558,7 +558,7 @@ def get_cluster_photos(cluster_id):
 
     results = []
     for pid in page_ids:
-        photo = Photo.query.get(pid)
+        photo = db.session.get(Photo, pid)
         if not photo:
             continue
         try:
@@ -592,7 +592,7 @@ def individual_face_crop(face_id):
     crop_filename = f"face_{face_id}.jpg"
     crop_path = os.path.join(FACE_CROPS_DIR, crop_filename)
     if not os.path.exists(crop_path):
-        face = Face.query.get_or_404(face_id)
+        face = db.session.get(Face, face_id) or abort(404)
         try:
             _make_face_crop(face.cluster_id, face, crop_path)
         except Exception as e:
@@ -626,7 +626,7 @@ def get_unidentified_faces():
 @app.route("/api/people/faces/disassociate", methods=["POST"])
 def disassociate_face():
     face_id = request.get_json(force=True).get("face_id")
-    face = Face.query.get_or_404(face_id)
+    face = db.session.get(Face, face_id) or abort(404)
     if face.cluster_id is None:
         return jsonify({"error": "face is already unidentified"}), 400
 
@@ -639,8 +639,8 @@ def disassociate_face():
     # Remove people tag from photo if no other faces from this cluster remain
     remaining = Face.query.filter_by(cluster_id=cluster_id, photo_id=photo_id).count()
     if remaining == 0:
-        cluster = PersonCluster.query.get(cluster_id)
-        photo   = Photo.query.get(photo_id)
+        cluster = db.session.get(PersonCluster, cluster_id)
+        photo   = db.session.get(Photo, photo_id)
         if cluster and photo:
             tag = Tag.query.filter_by(name=cluster.name, tag_type="people").first()
             if tag and tag in photo.tags:
@@ -655,8 +655,8 @@ def assign_face():
     data       = request.get_json(force=True)
     face_id    = data.get("face_id")
     cluster_id = data.get("cluster_id")
-    face    = Face.query.get_or_404(face_id)
-    cluster = PersonCluster.query.get_or_404(cluster_id)
+    face    = db.session.get(Face, face_id) or abort(404)
+    cluster = db.session.get(PersonCluster, cluster_id) or abort(404)
     face.cluster_id  = cluster_id
     face.person_name = cluster.name
     cluster.face_count += 1
@@ -666,7 +666,7 @@ def assign_face():
         tag = Tag(name=cluster.name, tag_type="people")
         db.session.add(tag)
         db.session.flush()
-    photo = Photo.query.get(face.photo_id)
+    photo = db.session.get(Photo, face.photo_id)
     if photo and tag not in photo.tags:
         photo.tags.append(tag)
     # Set sample photo for newly created clusters (no sample yet)
@@ -688,7 +688,7 @@ def rename_person():
     new_name = (data.get("new_name") or "").strip()
     if not cluster_id or not new_name:
         return jsonify({"error": "cluster_id and new_name required"}), 400
-    cluster = PersonCluster.query.get_or_404(cluster_id)
+    cluster = db.session.get(PersonCluster, cluster_id) or abort(404)
     cluster.rename(new_name, db.session)
     db.session.commit()
     return jsonify(cluster.to_dict())
@@ -702,8 +702,8 @@ def merge_people():
     if not source_id or not target_id or source_id == target_id:
         return jsonify({"error": "source_cluster_id and target_cluster_id are required and must differ"}), 400
 
-    source = PersonCluster.query.get_or_404(source_id)
-    target = PersonCluster.query.get_or_404(target_id)
+    source = db.session.get(PersonCluster, source_id) or abort(404)
+    target = db.session.get(PersonCluster, target_id) or abort(404)
 
     # Reassign all faces to target cluster
     Face.query.filter_by(cluster_id=source_id).update(
@@ -819,7 +819,7 @@ def face_editor_photos():
 @app.route("/api/people/faces/delete", methods=["POST"])
 def delete_face():
     face_id = request.get_json(force=True).get("face_id")
-    face = Face.query.get_or_404(face_id)
+    face = db.session.get(Face, face_id) or abort(404)
     cluster_id = face.cluster_id
     photo_id   = face.photo_id
     db.session.delete(face)
@@ -827,8 +827,8 @@ def delete_face():
     if cluster_id:
         remaining = Face.query.filter_by(cluster_id=cluster_id, photo_id=photo_id).count()
         if remaining == 0:
-            cluster = PersonCluster.query.get(cluster_id)
-            photo   = Photo.query.get(photo_id)
+            cluster = db.session.get(PersonCluster, cluster_id)
+            photo   = db.session.get(Photo, photo_id)
             if cluster and photo:
                 tag = Tag.query.filter_by(name=cluster.name, tag_type="people").first()
                 if tag and tag in photo.tags:
@@ -846,7 +846,7 @@ def create_manual_face():
     radius     = data.get("radius", 50)
     cluster_id = data.get("cluster_id")
 
-    photo = Photo.query.get_or_404(photo_id)
+    photo = db.session.get(Photo, photo_id) or abort(404)
     try:
         with Image.open(photo.filepath) as img:
             iw, ih = img.size
@@ -858,7 +858,7 @@ def create_manual_face():
     right  = min(iw, int(x + radius))
     bottom = min(ih, int(y + radius))
 
-    cluster = PersonCluster.query.get(cluster_id) if cluster_id else None
+    cluster = db.session.get(PersonCluster, cluster_id) if cluster_id else None
     face = Face(
         photo_id=photo_id,
         encoding=[],
@@ -970,7 +970,7 @@ def compute_suggestions():
     data       = request.get_json(force=True)
     cluster_id = data.get("cluster_id")
     max_gap    = float(data.get("max_gap", 0.15))
-    PersonCluster.query.get_or_404(cluster_id)
+    db.session.get(PersonCluster, cluster_id) or abort(404)
 
     # Clear existing unreviewed suggestions for this cluster
     FaceSuggestion.query.filter_by(current_cluster_id=cluster_id, reviewed=False).delete()
@@ -1048,11 +1048,11 @@ def get_suggestions():
 
     result = []
     for face_id, suggestions in grouped.items():
-        face = Face.query.get(face_id)
+        face = db.session.get(Face, face_id)
         if not face:
             continue
         first = suggestions[0]
-        photo = Photo.query.get(face.photo_id)
+        photo = db.session.get(Photo, face.photo_id)
         result.append({
             "face_id":               face_id,
             "photo_id":              face.photo_id,
@@ -1080,21 +1080,21 @@ def get_suggestions():
 @app.route("/api/people/suggestions/accept", methods=["POST"])
 def accept_suggestion():
     suggestion_id = request.get_json(force=True).get("suggestion_id")
-    s = FaceSuggestion.query.get_or_404(suggestion_id)
-    face = Face.query.get(s.face_id)
+    s = db.session.get(FaceSuggestion, suggestion_id) or abort(404)
+    face = db.session.get(Face, s.face_id)
     if face:
         old_cid = face.cluster_id
         new_cid = s.suggested_cluster_id
         face.cluster_id  = new_cid
-        new_cluster = PersonCluster.query.get(new_cid)
+        new_cluster = db.session.get(PersonCluster, new_cid)
         face.person_name = new_cluster.name if new_cluster else None
         db.session.flush()
-        photo = Photo.query.get(face.photo_id)
+        photo = db.session.get(Photo, face.photo_id)
         if photo:
             if old_cid:
                 remaining = Face.query.filter_by(cluster_id=old_cid, photo_id=face.photo_id).count()
                 if remaining == 0:
-                    old_cluster = PersonCluster.query.get(old_cid)
+                    old_cluster = db.session.get(PersonCluster, old_cid)
                     if old_cluster:
                         old_tag = Tag.query.filter_by(name=old_cluster.name, tag_type="people").first()
                         if old_tag and old_tag in photo.tags:
@@ -1112,7 +1112,7 @@ def accept_suggestion():
 @app.route("/api/people/suggestions/reject", methods=["POST"])
 def reject_suggestion():
     suggestion_id = request.get_json(force=True).get("suggestion_id")
-    s = FaceSuggestion.query.get_or_404(suggestion_id)
+    s = db.session.get(FaceSuggestion, suggestion_id) or abort(404)
     s.reviewed = True
     db.session.commit()
     return jsonify({"rejected": suggestion_id})

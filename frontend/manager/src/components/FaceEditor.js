@@ -52,7 +52,6 @@ function calcGridPageSize(w, h) {
 function computeCoverBoxes(img, faces) {
   if (!img || !img.naturalWidth || !faces.length || !faces[0].image_width) return [];
   const iw = faces[0].image_width;
-  const ih = faces[0].image_height;
   const toThumb = img.naturalWidth / iw;
   const cw = img.clientWidth;
   const ch = img.clientHeight;

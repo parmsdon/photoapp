@@ -86,7 +86,7 @@ export default function App() {
     setLightboxImgSize({ w: 0, h: 0 });
     setLightboxFaces([]);
     if (selectedPhoto) setShowLightboxFaces(showFacesRef.current);
-  }, [selectedPhoto?.id]);
+  }, [selectedPhoto, selectedPhoto?.id]);
 
   // Fetch faces when photo changes or toggle turns on
   useEffect(() => {
@@ -102,7 +102,7 @@ export default function App() {
         setLightboxFaces(data);
       })
       .catch(() => { lightboxFaceCache.current[selectedPhoto.id] = []; });
-  }, [selectedPhoto?.id, showLightboxFaces]);
+  }, [selectedPhoto, selectedPhoto?.id, showLightboxFaces]);
 
   const updateLightboxImgSize = useCallback(() => {
     const img = lightboxImgRef.current;

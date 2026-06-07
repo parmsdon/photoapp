@@ -254,7 +254,7 @@ export default function SuggestionReview({ cluster, onClose, afterTagOperation, 
             ref={lbImgRef}
             className="sr-lightbox-img"
             src={`${API_BASE}/api/photos/full/${current.photo_id}`}
-            alt="Full photo"
+            alt="Full size view"
             onLoad={handleLbImgLoad}
           />
           {lightboxBoxes.map(face => {
