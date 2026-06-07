@@ -10,7 +10,18 @@ APP_USER="photoapp"
 
 info() { echo -e "\n\033[1;34m==> $*\033[0m"; }
 ok()   { echo -e "\033[1;32m    ✓ $*\033[0m"; }
+warn() { echo -e "\033[1;33m    ! $*\033[0m"; }
 die()  { echo -e "\033[1;31mERROR: $*\033[0m" >&2; exit 1; }
+
+# ── Identify the invoking user (who owns the SSH key for GitHub) ──────────────
+# This script must be run with sudo. Git operations run as the original user
+# so that their ~/.ssh key is used; chown/systemctl run as root.
+
+if [ -z "${SUDO_USER:-}" ]; then
+    die "Run this script with sudo, not directly as root.\n  Usage: sudo $0"
+fi
+GIT_USER="$SUDO_USER"
+ok "Git operations will run as '$GIT_USER'"
 
 [ -d "$PROD_DIR/.git" ] || die "$PROD_DIR is not a git repository. Run setup_production.sh first."
 
@@ -18,21 +29,22 @@ cd "$PROD_DIR"
 
 # ── Git safe directory (idempotent) ───────────────────────────────────────────
 
-git config --global --add safe.directory "$PROD_DIR"
-ok "safe.directory configured"
+sudo -u "$GIT_USER" git config --global --add safe.directory "$PROD_DIR"
+ok "safe.directory configured for $GIT_USER"
 
 # ── Pull latest code ──────────────────────────────────────────────────────────
 
 info "Pulling latest code"
 
-# Temporarily give the deploying user write access to .git so pull works,
-# then ownership is fully restored to photoapp after builds complete.
-sudo chown -R parmsd:photoapp "$PROD_DIR/.git"
-sudo chmod -R g+w "$PROD_DIR"
+# Temporarily give the deploying user ownership of .git so git pull can write
+# pack files and update refs. Full photoapp ownership is restored after builds.
+chown -R "$GIT_USER:$APP_USER" "$PROD_DIR/.git"
+chmod -R g+w "$PROD_DIR"
 
-# Capture which files changed since current HEAD
-CHANGED=$(git diff --name-only HEAD origin/master 2>/dev/null || true)
-git pull origin master
+# Capture which files changed since current HEAD, then pull — both as GIT_USER
+# so the SSH agent / key in their home directory is used for GitHub auth.
+CHANGED=$(sudo -u "$GIT_USER" git diff --name-only HEAD origin/master 2>/dev/null || true)
+sudo -u "$GIT_USER" git pull origin master
 ok "Code updated"
 
 # ── Python dependencies ───────────────────────────────────────────────────────
