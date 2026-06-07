@@ -102,7 +102,7 @@ ok "Gunicorn (photoapp) restarted"
 
 # Reload nginx only if its config changed
 if echo "$CHANGED" | grep -q "config/nginx.conf"; then
-    cp "$PROD_DIR/config/nginx.conf" /etc/nginx/sites-available/photoapp
+    cp "$PROD_DIR/config/nginx.conf" /etc/nginx/conf.d/photoapp.conf
     nginx -t
     systemctl reload nginx
     ok "Nginx config updated and reloaded"

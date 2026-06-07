@@ -6,7 +6,7 @@ set -euo pipefail
 PROD_DIR="/projects/photoapp"
 REPO_URL="git@github.com:parmsdon/photoapp.git"
 APP_USER="photoapp"
-NGINX_CONF="/etc/nginx/sites-available/photoapp"
+NGINX_CONF="/etc/nginx/conf.d/photoapp.conf"
 SERVICE_FILE="/etc/systemd/system/photoapp.service"
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
@@ -100,17 +100,22 @@ cd "$PROD_DIR"
 # ── Nginx ─────────────────────────────────────────────────────────────────────
 
 info "Installing Nginx configuration"
+
+# Fedora ships nginx with an http block that includes conf.d/*.conf — verify
+# the directive is present, and add it if a custom nginx.conf has removed it.
+NGINX_MAIN="/etc/nginx/nginx.conf"
+if ! grep -q "conf\.d/\*\.conf" "$NGINX_MAIN"; then
+    warn "conf.d/*.conf include not found in $NGINX_MAIN — adding it"
+    sed -i '/^http\s*{/a\    include /etc/nginx/conf.d/*.conf;' "$NGINX_MAIN"
+    ok "Include directive added to $NGINX_MAIN"
+else
+    ok "conf.d/*.conf already included in $NGINX_MAIN"
+fi
+
 cp "$PROD_DIR/config/nginx.conf" "$NGINX_CONF"
 
-# Enable site
-if [ ! -L "/etc/nginx/sites-enabled/photoapp" ]; then
-    ln -sf "$NGINX_CONF" /etc/nginx/sites-enabled/photoapp
-fi
-# Disable the default site if present
-rm -f /etc/nginx/sites-enabled/default
-
 nginx -t
-ok "Nginx configuration valid"
+ok "Nginx configuration installed and valid ($NGINX_CONF)"
 
 # ── Systemd service ───────────────────────────────────────────────────────────
 
