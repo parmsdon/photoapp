@@ -16,9 +16,20 @@ die()  { echo -e "\033[1;31mERROR: $*\033[0m" >&2; exit 1; }
 
 cd "$PROD_DIR"
 
+# ── Git safe directory (idempotent) ───────────────────────────────────────────
+
+git config --global --add safe.directory "$PROD_DIR"
+ok "safe.directory configured"
+
 # ── Pull latest code ──────────────────────────────────────────────────────────
 
 info "Pulling latest code"
+
+# Temporarily give the deploying user write access to .git so pull works,
+# then ownership is fully restored to photoapp after builds complete.
+sudo chown -R parmsd:photoapp "$PROD_DIR/.git"
+sudo chmod -R g+w "$PROD_DIR"
+
 # Capture which files changed since current HEAD
 CHANGED=$(git diff --name-only HEAD origin/master 2>/dev/null || true)
 git pull origin master
@@ -88,11 +99,15 @@ else
     ok "Manager source unchanged — skipping build"
 fi
 
-# ── Fix ownership ─────────────────────────────────────────────────────────────
+# ── Restore ownership and permissions ────────────────────────────────────────
 
-info "Updating file ownership"
-chown -R "$APP_USER:$APP_USER" "$PROD_DIR"
-ok "Ownership set to $APP_USER"
+info "Restoring ownership and permissions"
+sudo chown -R photoapp:photoapp "$PROD_DIR"
+sudo chmod -R g+w "$PROD_DIR"
+sudo find "$PROD_DIR" -type f -name "*.sh" -exec chmod +x {} \;
+sudo find "$PROD_DIR/venv/bin" -type f -exec chmod +x {} \;
+ok "Ownership restored to photoapp:photoapp"
+ok "Shell scripts and venv binaries marked executable"
 
 # ── Restart services ──────────────────────────────────────────────────────────
 

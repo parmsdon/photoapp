@@ -67,6 +67,11 @@ fi
 
 cd "$PROD_DIR"
 
+# ── Git safe directory (idempotent) ───────────────────────────────────────────
+
+git config --global --add safe.directory "$PROD_DIR"
+ok "safe.directory configured"
+
 # ── Python virtual environment ────────────────────────────────────────────────
 
 info "Setting up Python 3.11 virtual environment"
