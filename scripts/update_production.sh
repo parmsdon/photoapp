@@ -41,10 +41,11 @@ info "Pulling latest code"
 chown -R "$GIT_USER:$APP_USER" "$PROD_DIR/.git"
 chmod -R g+w "$PROD_DIR"
 
-# Capture which files changed since current HEAD, then pull — both as GIT_USER
-# so the SSH agent / key in their home directory is used for GitHub auth.
-CHANGED=$(sudo -u "$GIT_USER" git diff --name-only HEAD origin/master 2>/dev/null || true)
+# Snapshot HEAD before pulling, then diff afterwards — this is the only reliable
+# way to know what changed, since origin/master may not be fetched yet pre-pull.
+OLD_HEAD=$(sudo -u "$GIT_USER" git rev-parse HEAD)
 sudo -u "$GIT_USER" git pull origin master
+CHANGED=$(sudo -u "$GIT_USER" git diff --name-only "$OLD_HEAD" HEAD)
 ok "Code updated"
 
 # ── Python dependencies ───────────────────────────────────────────────────────
