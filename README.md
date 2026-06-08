@@ -52,15 +52,35 @@ python app.py
 
 The API will be available at `http://localhost:5000`.
 
-### Frontend
+### Frontend (development)
+
+There are two React frontends. Each needs its own `.env.local` with the
+address of the Flask server on your network.
 
 ```bash
-cd frontend
+# viewer (http://localhost:3000)
+cd frontend/viewer
+cp .env.local.example .env.local
+# edit .env.local — set REACT_APP_API_BASE=http://<your-server-ip>:5000
+npm install
+npm start
+
+# manager (http://localhost:3001)
+cd frontend/manager
+cp .env.local.example .env.local
+# edit .env.local — set REACT_APP_API_BASE=http://<your-server-ip>:5000
 npm install
 npm start
 ```
 
-The React app will be available at `http://localhost:3000` and proxies API calls to the Flask backend.
+`REACT_APP_API_BASE` tells the dev server where Flask is running. The dev
+server also proxies `/api/` calls automatically (via the `proxy` field in
+`package.json`), but setting the env variable ensures the correct host is
+used when the browser accesses the API directly.
+
+In production `REACT_APP_API_BASE` is not set, so `API_BASE` defaults to
+`''` and all API calls are relative — handled by the Nginx `proxy_pass`
+to Gunicorn.
 
 ## API Endpoints
 
